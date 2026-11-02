@@ -4,17 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
-  <title>DAapp — Вход для жителей</title>
+  <title>DAapp — Личный профиль</title>
   <style>
-    :root{font-family:system-ui,-apple-system,sans-serif;color:#17212f;background:#f4f6f8}
-    *{box-sizing:border-box}body{margin:0}main{max-width:440px;min-height:100dvh;margin:auto;padding:36px 20px}
-    h1{font-size:2rem;margin:0 0 8px}h2{font-size:1.2rem}p{color:#526171;line-height:1.5}
-    .panel{margin-top:28px;padding:22px;background:#fff;border-radius:18px;box-shadow:0 4px 18px #1a29300d}
-    label{display:block;font-weight:600;margin-bottom:8px}input,button{width:100%;min-height:48px;border-radius:12px;font:inherit}
-    input{border:1px solid #b9c4ce;padding:12px}button{border:0;background:#126b52;color:white;font-weight:700;margin-top:16px;cursor:pointer}
-    button:disabled{opacity:.5;cursor:wait}.secondary{background:#e8efed;color:#174538}
-    .message{margin-top:20px;line-height:1.5;overflow-wrap:anywhere}
-    [hidden]{display:none!important}
+    :root { font-family:system-ui,-apple-system,sans-serif; color:#17212f; background:#f4f6f8 }
+    * { box-sizing:border-box }
+    body { margin:0 }
+    main { max-width:440px; min-height:100dvh; margin:auto; padding:36px 20px 48px }
+    h1 { font-size:2rem; margin:0 0 8px }
+    h2 { font-size:1.2rem; margin:0 0 14px }
+    p { color:#526171; line-height:1.5 }
+    .panel { margin-top:24px; padding:22px; background:#fff; border-radius:18px; box-shadow:0 4px 18px #1a29300d }
+    label { display:block; font-weight:600; margin:16px 0 8px }
+    input, button { width:100%; min-height:48px; border-radius:12px; font:inherit }
+    input { border:1px solid #b9c4ce; padding:12px; background:#fff }
+    button { border:0; background:#126b52; color:#fff; font-weight:700; margin-top:16px; cursor:pointer }
+    button:disabled { opacity:.55; cursor:wait }
+    .secondary { background:#e8efed; color:#174538 }
+    .role { padding:10px 12px; border-radius:10px; background:#f4f6f8; margin:0 }
+    .message { margin-top:18px; line-height:1.5; overflow-wrap:anywhere; font-size:.92rem }
+    [hidden] { display:none!important }
   </style>
 </head>
 <body>
@@ -28,14 +36,22 @@
       <form id="loginForm">
         <label for="email">Электронная почта</label>
         <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
-        <button id="sendButton" type="submit">Отправить ссылку</button>
+        <button id="sendButton" type="submit" disabled>Отправить ссылку</button>
       </form>
     </section>
 
     <section class="panel" id="account" hidden>
-      <h2>Вы вошли в DAapp</h2>
+      <h2>Мой профиль</h2>
       <p id="accountEmail"></p>
-      <p>Карта и местные сервисы появятся на следующих этапах.</p>
+      <form id="profileForm" hidden>
+        <p class="role">Тип аккаунта: <strong id="accountRole"></strong></p>
+        <label for="fullName">Ваше имя</label>
+        <input id="fullName" name="fullName" type="text" autocomplete="name" maxlength="80" placeholder="Как к вам обращаться?">
+        <label for="phoneNumber">Номер телефона</label>
+        <input id="phoneNumber" name="phoneNumber" type="tel" inputmode="tel" autocomplete="tel" maxlength="25" placeholder="+7 7XX XXX XX XX">
+        <button id="saveButton" type="submit">Сохранить профиль</button>
+      </form>
+      <p id="profileStatus" class="message" role="status" aria-live="polite"></p>
       <button class="secondary" id="logoutButton" type="button">Выйти</button>
     </section>
 
@@ -43,34 +59,61 @@
   </main>
 
   <script type="module">
-    // Файл shared/supabase.js создаёт единственный общий браузерный клиент.
+    // shared/supabase.js — общее подключение, profile.js — функции этого экрана.
+    const login = document.querySelector('#login');
+    const account = document.querySelector('#account');
     const form = document.querySelector('#loginForm');
     const message = document.querySelector('#message');
     const sendButton = document.querySelector('#sendButton');
-    const login = document.querySelector('#login');
-    const account = document.querySelector('#account');
-    const accountEmail = document.querySelector('#accountEmail');
     const logoutButton = document.querySelector('#logoutButton');
-
-    function displaySession(session) {
-      const user = session?.user;
-      login.hidden = Boolean(user);
-      account.hidden = !user;
-      accountEmail.textContent = user?.email ?? '';
-      if (user) message.textContent = 'Авторизация выполнена.';
-    }
+    const accountEmail = document.querySelector('#accountEmail');
 
     try {
-      const { supabase } = await import('../shared/supabase.js');
+      const [{ supabase }, { createProfileController }] = await Promise.all([
+        import('../shared/supabase.js'),
+        import('./profile.js')
+      ]);
+
+      const profile = createProfileController({
+        form: document.querySelector('#profileForm'),
+        fullName: document.querySelector('#fullName'),
+        phoneNumber: document.querySelector('#phoneNumber'),
+        role: document.querySelector('#accountRole'),
+        status: document.querySelector('#profileStatus'),
+        saveButton: document.querySelector('#saveButton')
+      });
+
+      let displayedUserId = null;
+
+      function displaySession(session) {
+        const user = session?.user ?? null;
+        const nextId = user?.id ?? null;
+        // При обновлении токена повторная загрузка профиля не нужна.
+        if (displayedUserId === nextId) return;
+
+        displayedUserId = nextId;
+        login.hidden = Boolean(user);
+        account.hidden = !user;
+        accountEmail.textContent = user?.email ?? '';
+
+        if (user) {
+          message.textContent = '';
+          void profile.show(user);
+        } else {
+          profile.clear();
+          message.textContent = 'Введите e-mail для входа.';
+        }
+      }
+
+      // Не выполняем сетевые запросы внутри самого обработчика события Supabase Auth.
+      supabase.auth.onAuthStateChange((_event, session) => {
+        setTimeout(() => displaySession(session), 0);
+      });
+
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
       displaySession(data.session);
-      if (!data.session) message.textContent = 'Введите e-mail для входа.';
-
-      // Реагируем на вход по ссылке и выход без перезагрузки страницы.
-      supabase.auth.onAuthStateChange((_event, session) => {
-        displaySession(session);
-      });
+      sendButton.disabled = false;
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -85,25 +128,31 @@
           if (otpError) throw otpError;
           message.textContent = 'Если адрес доступен для входа, проверьте почту и откройте ссылку на этом устройстве.';
         } catch (error) {
-          console.error('Ошибка входа', error);
-          message.textContent = 'Не удалось отправить ссылку. Проверьте подключение и настройки Supabase Auth.';
+          console.error('Ошибка входа:', error);
+          message.textContent = 'Не удалось отправить ссылку. Проверьте интернет и настройки Supabase Auth.';
         } finally {
           sendButton.disabled = false;
         }
       });
 
       logoutButton.addEventListener('click', async () => {
-        const { error: logoutError } = await supabase.auth.signOut();
-        if (logoutError) {
-          message.textContent = 'Не удалось выйти. Повторите попытку.';
-        } else {
+        logoutButton.disabled = true;
+        try {
+          const { error: logoutError } = await supabase.auth.signOut();
+          if (logoutError) throw logoutError;
+          displaySession(null);
           message.textContent = 'Вы вышли из DAapp.';
+        } catch (error) {
+          console.error('Ошибка выхода:', error);
+          message.textContent = 'Не удалось выйти. Попробуйте ещё раз.';
+        } finally {
+          logoutButton.disabled = false;
         }
       });
     } catch (error) {
-      console.error('Ошибка запуска DAapp', error);
+      console.error('Ошибка инициализации DAapp:', error);
       sendButton.disabled = true;
-      message.textContent = 'Нет подключения к сервису. Проверьте интернет и попробуйте обновить страницу.';
+      message.textContent = 'Нет подключения к сервису. Проверьте интернет и обновите страницу.';
     }
   </script>
 </body>
