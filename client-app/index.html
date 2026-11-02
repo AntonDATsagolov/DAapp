@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="DAapp — цифровая карта поселка и местные сервисы">
-  <title>DAapp — Карта поселка</title>
+  <meta name="description" content="DAapp — карта и местные сервисы посёлка Шиели, Кызылординская область">
+  <title>DAapp — Шиели</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -17,17 +17,17 @@
       <p class="tagline">Всё нужное — рядом</p>
     </div>
     <div class="topbar-right">
-      <strong id="mapLocation">Кызылорда · демо</strong>
-      <span>Местность изменим под ваш поселок</span>
+      <strong id="mapLocation">Шиели · Шиелі</strong>
+      <span>Кызылординская область</span>
     </div>
   </header>
 
   <main class="views">
-    <section id="mapScreen" class="screen map-screen" aria-label="Карта поселка">
+    <section id="mapScreen" class="screen map-screen" aria-label="Карта Шиели">
       <div class="map-area">
         <div id="villageMap" role="region" aria-label="Интерактивная карта OpenStreetMap"></div>
         <form class="map-search" id="coordinateForm" autocomplete="off" role="search">
-          <input id="coordinateInput" type="text" aria-label="Широта, долгота" placeholder="Координаты: 44.8528, 65.5092" maxlength="60">
+          <input id="coordinateInput" type="text" aria-label="Широта, долгота" placeholder="Координаты: 44.1760, 66.7410" maxlength="60">
           <button type="submit">Найти</button>
         </form>
         <p id="mapStatus" class="map-status" role="status" aria-live="polite">Загружаем карту…</p>
