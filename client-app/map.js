@@ -284,7 +284,7 @@ export async function initVillageMap({
 
   renderCatalog();
   await start();
-  if (map) void loadCatalog();
+  void loadCatalog();
   return {
     invalidateSize() { if (map) map.invalidateSize(); }
   };
