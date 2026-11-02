@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>DAapp — Для жителей и гостей</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f6f7f9;color:#18212b}main{max-width:480px;margin:auto;min-height:100dvh;padding:32px 20px}h1{font-size:1.8rem;margin:12px 0}p{line-height:1.5;color:#52606d}.status{margin-top:24px;padding:14px;background:#fff;border-radius:12px;font-size:.9rem}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>DAapp</h1>
+    <p>Для жителей и гостей</p>
+    <p>Карта, услуги и заказы</p>
+    <div id="status" class="status" role="status">Инициализация Supabase…</div>
+  </main>
+  <script type="module">
+    // Общий клиент импортируется из корня монорепозитория.
+    const status = document.querySelector('#status');
+    try {
+      const { supabase } = await import('../shared/supabase.js');
+      // Читаем состояние авторизации — не запрашиваем данные без RLS.
+      const { error } = await supabase.auth.getSession();
+      if (error) throw error;
+      status.textContent = 'Клиент Supabase инициализирован. Функции будут добавлены поэтапно.';
+    } catch (error) {
+      console.error('Ошибка запуска DAapp', error);
+      status.textContent = 'Не удалось проверить подключение. Проверьте интернет и настройки Supabase.';
+    }
+  </script>
+</body>
+</html>
