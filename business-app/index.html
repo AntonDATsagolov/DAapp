@@ -48,8 +48,10 @@
   <div class="info">Заявка не даёт права управлять чужой организацией и не публикуется автоматически. Укажите достоверные сведения и контакт для проверки.</div>
 
   <section id="authPanel" class="panel">
-    <h2>Вход или регистрация</h2>
-    <p>Войти можно по e-mail без пароля. Если аккаунта DAapp ещё нет, он может быть создан автоматически. Вход завершится по ссылке из письма.</p>
+    <h2>Единый аккаунт DAapp</h2>
+    <p>Для предпринимателя нужен тот же аккаунт, что и у жителя или водителя. Вход и регистрация — по логину, паролю и SMS.</p>
+    <p><a href="../account-app/?next=business">Войти или зарегистрироваться по номеру и паролю</a></p>
+    <p class="hint">Уже есть старый аккаунт по e-mail? Войдите через прежнюю ссылку:</p>
     <form id="loginForm">
       <label for="email">Электронная почта</label>
       <input id="email" type="email" autocomplete="email" placeholder="name@example.com" required>
@@ -189,7 +191,7 @@
       try {
         const {error} = await client.auth.signInWithOtp({
           email: el('email').value.trim(),
-          options: { emailRedirectTo: new URL('./', location.href).href, shouldCreateUser: true }
+          options: { emailRedirectTo: new URL('./', location.href).href, shouldCreateUser: false }
         });
         if (error) throw error;
         el('authMessage').textContent = 'Письмо отправлено. Откройте ссылку для входа на этом устройстве.';
