@@ -221,6 +221,69 @@ test('Migration 005: applicant-only RLS and no browser moderation permissions', 
   assert.ok(!sql.includes('alter table public.map_places'));
 });
 
+test('Admin component check covers auth, admin access, own RLS, queue and public places without writes', async () => {
+  const source = read('admin-app/checks.js').replace(/^export /gm, '');
+  const runAdminReadChecks = new Function(source + '\nreturn runAdminReadChecks;')();
+  const calls = [];
+  const fake = {
+    auth: { async getUser() { calls.push('getUser'); return {
+      data: { user: { id: 'admin-1' } }, error: null
+    }; } },
+    from(table) {
+      calls.push(table);
+      const chain = {
+        select(cols, options) {
+          if (table === 'place_submissions') {
+            assert.equal(cols, 'id');
+            assert.deepEqual(options, { count: 'exact', head: true });
+            return Promise.resolve({ count: 2, error: null });
+          }
+          if (table === 'map_places') {
+            assert.equal(cols, 'id');
+            assert.deepEqual(options, { count: 'exact', head: true });
+          }
+          return chain;
+        },
+        eq(key, value) {
+          if (table === 'daapp_admins') {
+            assert.equal(key, 'user_id');
+            assert.equal(value, 'admin-1');
+            return chain;
+          }
+          assert.equal(table, 'map_places');
+          assert.equal(key, 'is_published');
+          assert.equal(value, true);
+          return Promise.resolve({ count: 3, error: null });
+        },
+        async maybeSingle() { return { data: { user_id: 'admin-1' }, error: null }; }
+      };
+      return chain;
+    },
+    async rpc(name) {
+      calls.push(name);
+      assert.equal(name, 'daapp_admin_list_submissions');
+      return { data: [{ id: 'submission' }], error: null };
+    }
+  };
+
+  const checks = await runAdminReadChecks(fake, 'admin-1');
+  assert.equal(checks.length, 5);
+  assert.ok(checks.every(result => result.ok));
+  assert.match(checks[2].detail, /1/);
+  assert.match(checks[4].detail, /3/);
+  assert.ok(calls.includes('place_submissions'));
+  assert.ok(calls.includes('map_places'));
+  for (const method of ['.insert(', '.update(', '.delete(', 'daapp_admin_review_submission']) {
+    assert.ok(!source.includes(method), 'Read-only diagnostic must not write via ' + method);
+  }
+  const stopped = await runAdminReadChecks({
+    ...fake,
+    auth: { async getUser() { return { data: { user: { id: 'someone-else' } }, error: null }; } }
+  }, 'admin-1');
+  assert.equal(stopped.length, 1, 'Must stop after failed identity validation');
+  assert.equal(stopped[0].ok, false);
+});
+
 test('Moderation admin UI keeps account authorization server-side', () => {
   const html = read('admin-app/index.html');
   assert.match(html, /<meta name="viewport"/);
@@ -229,6 +292,9 @@ test('Moderation admin UI keeps account authorization server-side', () => {
   assert.ok(html.includes("rpc('daapp_admin_list_submissions')"));
   assert.ok(html.includes("rpc('daapp_admin_review_submission'"));
   assert.ok(html.includes('verifiedCheckbox'));
+  assert.ok(html.includes('systemCheckButton'));
+  assert.ok(html.includes("import('./checks.js')"));
+  assert.ok(html.includes('function runSystemCheck()'));
   assert.ok(html.includes('phoneConsent'));
   assert.ok(html.includes('verifiedLatitude'));
   assert.ok(html.includes('verifiedLongitude'));
@@ -295,6 +361,7 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'client-app/places.js',
     'business-app/submissions.js',
     'admin-app/index.html',
+    'admin-app/checks.js',
     'business-app/index.html',
     'driver-app/index.html'
   ];

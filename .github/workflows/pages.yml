@@ -51,6 +51,7 @@ jobs:
           test -f _site/client-app/styles.css
           test -f _site/business-app/index.html
           test -f _site/admin-app/index.html
+          test -f _site/admin-app/checks.js
           test -f _site/business-app/submissions.js
           test -f _site/driver-app/index.html
           test -f _site/shared/supabase.js
@@ -85,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           base="https://antondatsagolov.github.io/DAapp"
-          for path in client-app/ client-app/map.js client-app/places.js client-app/styles.css business-app/ business-app/submissions.js admin-app/ driver-app/ shared/supabase.js diagnostics/; do
+          for path in client-app/ client-app/map.js client-app/places.js client-app/styles.css business-app/ business-app/submissions.js admin-app/ admin-app/checks.js driver-app/ shared/supabase.js diagnostics/; do
             echo "Checking $base/$path"
             success=0
             for attempt in $(seq 1 15); do

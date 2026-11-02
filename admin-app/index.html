@@ -44,6 +44,12 @@ input:focus-visible,button:focus-visible{outline:2px solid #73b28c;outline-offse
 small{color:#74877a;font-size:.75rem}
 .mono{font:700 .78rem ui-monospace,monospace;word-break:break-all}
 footer{margin-top:28px;text-align:center;font-size:.79rem}
+.check-results{display:grid;gap:8px;margin-top:12px}
+.check-row{border:1px solid #e2eae5;border-radius:11px;padding:10px 12px;background:#f7faf8}
+.check-row[data-ok="false"]{border-color:#ead0cf;background:#fff7f7}
+.check-row strong{display:block;font-size:.82rem}
+.check-row span{display:block;font-size:.76rem;color:#516a5b;margin-top:4px;overflow-wrap:anywhere}
+.check-row[data-ok="false"] span{color:#944040}
 @media(min-width:740px){main{padding:32px 25px 90px}.grid{grid-template-columns:1fr 1.05fr;align-items:start}.card{padding:23px}h1{font-size:2rem}}
 </style>
 </head>
@@ -83,6 +89,13 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       <button id="logoutButton" class="btn alt" type="button">Выйти</button>
       <p id="queueStatus" class="status" role="status" aria-live="polite"></p>
     </div>
+    <section class="card" aria-label="Диагностика подключения">
+      <h2>Проверка системы без изменений данных</h2>
+      <p>Проверим действующую авторизацию, права администратора, очередь заявок и публичный каталог. Тест не создаёт, не одобряет и не удаляет организации.</p>
+      <button id="systemCheckButton" class="btn alt" type="button">Проверить подключение компонентов</button>
+      <p id="systemCheckStatus" class="status" role="status" aria-live="polite">Проверка ещё не выполнялась.</p>
+      <div id="systemCheckResults" class="check-results" aria-label="Результаты проверки"></div>
+    </section>
     <div class="grid">
       <section class="card">
         <h2>Ожидают проверки</h2>
@@ -130,7 +143,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
 <script type="module">
   const $ = (id) => document.getElementById(id);
   const loginPanel = $('loginPanel'), accessPanel = $('accessPanel'), adminPanel = $('adminPanel');
-  let client, activeUserId, epoch = 0, selected = null, queue = [], busy = false;
+  let client, readChecks, activeUserId, epoch = 0, selected = null, queue = [], busy = false;
   const categoryNames = { shop:'Магазин', cafe:'Кафе', beauty:'Красота', hotel:'Гостиница', taxi:'Такси' };
 
   function showState(state) {
@@ -210,6 +223,8 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
     queue = [];
     selected = null;
     $('queue').replaceChildren();
+    $('systemCheckResults').replaceChildren();
+    $('systemCheckStatus').textContent = 'Проверка ещё не выполнялась.';
     $('details').hidden = true;
     if (!user) {
       showState('login');
@@ -235,6 +250,42 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       if (epoch !== stamp || activeUserId !== id) return;
       console.warn('Admin access check error', error?.code || 'network');
       $('accessMessage').textContent = 'Не удалось проверить администратора. SQL 006 может быть ещё не установлен.';
+    }
+  }
+
+  async function runSystemCheck() {
+    if (!client || !readChecks || !activeUserId) return;
+    const stamp = epoch, id = activeUserId;
+    const button = $('systemCheckButton');
+    button.disabled = true;
+    $('systemCheckResults').replaceChildren();
+    $('systemCheckStatus').textContent = 'Выполняем безопасную проверку…';
+    try {
+      const checks = await readChecks(client, id);
+      if (stamp !== epoch || id !== activeUserId) return;
+      let failed = 0;
+      for (const result of checks) {
+        const row = document.createElement('div');
+        row.className = 'check-row';
+        row.dataset.ok = String(result.ok);
+        const name = document.createElement('strong');
+        name.textContent = (result.ok ? '✓ ' : '✕ ') + result.label;
+        const detail = document.createElement('span');
+        detail.textContent = result.detail;
+        row.append(name, detail);
+        $('systemCheckResults').append(row);
+        if (!result.ok) failed++;
+      }
+      $('systemCheckStatus').textContent = failed
+        ? 'Проблемных проверок: ' + failed + '. Остальные компоненты могут работать.'
+        : 'Все пять проверок прошли. Это проверка чтения; отправку и публикацию реальной заявки нужно испытать отдельно.';
+    } catch (error) {
+      if (stamp === epoch && id === activeUserId) {
+        console.warn('DAapp read-only check failed', error?.code || 'network');
+        $('systemCheckStatus').textContent = 'Проверка прервана. Проверьте соединение и повторите.';
+      }
+    } finally {
+      if (stamp === epoch && id === activeUserId) button.disabled = false;
     }
   }
 
@@ -283,13 +334,12 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       });
       if (error) throw error;
       if (epoch !== stamp || activeUserId !== id) return;
-      $('reviewStatus').textContent = decision === 'approved'
-        ? 'Организация опубликована на карте.'
-        : 'Заявка отклонена.';
       queue = queue.filter(q => q.id !== original.id);
       selected = null;
       renderQueue();
-      $('queueStatus').textContent = 'Осталось заявок: ' + queue.length;
+      $('queueStatus').textContent = (decision === 'approved'
+        ? 'Организация опубликована на карте Шиели.'
+        : 'Заявка отклонена.') + ' Осталось заявок: ' + queue.length;
     } catch (error) {
       if (epoch !== stamp || activeUserId !== id) return;
       console.warn('DAapp moderation action error', error?.code || 'network');
@@ -302,8 +352,11 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
   }
 
   try {
-    const {supabase} = await import('../shared/supabase.js');
+    const [{supabase}, {runAdminReadChecks}] = await Promise.all([
+      import('../shared/supabase.js'), import('./checks.js')
+    ]);
     client = supabase;
+    readChecks = runAdminReadChecks;
     client.auth.onAuthStateChange((_event,session) =>
       setTimeout(() => { void showSession(session); },0));
     const { data,error } = await client.auth.getSession();
@@ -327,6 +380,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       } finally { $('loginButton').disabled = false; }
     });
     $('refreshButton').addEventListener('click',()=>{ void loadQueue(); });
+    $('systemCheckButton').addEventListener('click',()=>{ void runSystemCheck(); });
     $('approveForm').addEventListener('submit',(event)=>{
       event.preventDefault(); void review('approved');
     });
