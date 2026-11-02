@@ -236,7 +236,7 @@ test('Moderation admin UI keeps account authorization server-side', () => {
   assert.ok(!html.includes("from('map_places')"));
   assert.ok(!html.includes("from('place_submissions')"));
   assert.ok(!html.includes('innerHTML'));
-  const script = html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+  const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script);
   assert.doesNotThrow(() => new AsyncFunction(script));
 });
