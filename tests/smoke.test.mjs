@@ -46,12 +46,15 @@ test('Map module parses coordinates and rejects invalid positions', () => {
     .replace(/^export /gm, '');
   const parseCoordinates = new Function(source + '\nreturn parseCoordinates;')();
 
-  assert.deepEqual(parseCoordinates('44.8528, 65.5092'), [44.8528, 65.5092]);
+  assert.deepEqual(parseCoordinates('44.1760, 66.7410'), [44.176, 66.741]);
   assert.deepEqual(parseCoordinates('44.8528;65.5092'), [44.8528, 65.5092]);
   assert.equal(parseCoordinates('91, 65'), null);
   assert.equal(parseCoordinates('44, 181'), null);
   assert.equal(parseCoordinates('не координаты'), null);
   assert.equal(parseCoordinates(''), null);
+  assert.ok(source.includes('DEFAULT_CENTER = [44.17603, 66.74096]'),
+    'Default map must be centered on Shieli, not Kyzylorda');
+  assert.equal(new Function(source + '\nreturn DEFAULT_ZOOM;')(), 13);
   assert.ok(source.includes('tile.openstreetmap.org'));
   assert.match(source, /OpenStreetMap/);
   assert.ok(source.includes('navigator.geolocation'));
@@ -60,6 +63,8 @@ test('Map module parses coordinates and rejects invalid positions', () => {
 test('Mobile DAapp map is publicly accessible without login', () => {
   const html = read('client-app/index.html');
   const css = read('client-app/styles.css');
+  assert.match(html, /<strong id="mapLocation">Шиели · Шиелі<\/strong>/);
+  assert.match(html, /Кызылординская область/);
   assert.match(html, /id="villageMap"/);
   assert.match(html, /id="mapTab"/);
   assert.match(html, /id="profileTab"/);
