@@ -1,0 +1,7 @@
+# Локальные файлы с секретами (не коммитить)
+.env
+.env.*
+!.env.example
+.DS_Store
+node_modules/
+dist/

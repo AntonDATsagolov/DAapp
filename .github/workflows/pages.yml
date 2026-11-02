@@ -1,0 +1,71 @@
+name: Deploy DAapp preview to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - setup/initial-pwa-scaffold
+  workflow_dispatch:
+
+# Only the workflow gets deployment privileges, not the browser application.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: daapp-github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out DAapp
+        uses: actions/checkout@v4
+
+      - name: Prepare public website only
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cp -R client-app business-app driver-app shared _site/
+          cat > _site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="ru">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="refresh" content="0;url=./client-app/">
+            <title>DAapp</title>
+          </head>
+          <body>
+            <p><a href="./client-app/">Открыть DAapp для жителей</a></p>
+          </body>
+          </html>
+          HTML
+          touch _site/.nojekyll
+          test -f _site/client-app/index.html
+          test -f _site/business-app/index.html
+          test -f _site/driver-app/index.html
+          test -f _site/shared/supabase.js
+          if grep -REq 'sb_secret_[A-Za-z0-9_-]{10,}' _site; then
+            echo "Refusing to deploy: Supabase secret key found."
+            exit 1
+          fi
+
+      - name: Upload static website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
