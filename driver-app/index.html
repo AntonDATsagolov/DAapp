@@ -61,12 +61,12 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   </div>
 
   <section id="authPanel" class="panel">
-    <h2>Войти в кабинет водителя</h2>
-    <p class="panel-lead">Вход по e-mail через Supabase. Пароль не нужен. Можно использовать свой аккаунт DAapp.</p>
+    <h2>Войти или зарегистрироваться</h2>
+    <p class="panel-lead">Вход и регистрация по e-mail без пароля. Новый аккаунт создаётся после подтверждения письма. Можно использовать уже существующий аккаунт DAapp.</p>
     <form id="loginForm">
       <label class="field" for="email">Электронная почта</label>
       <input id="email" type="email" autocomplete="email" placeholder="name@example.com" required>
-      <button id="loginButton" class="btn full" type="submit" disabled>Получить ссылку для входа</button>
+      <button id="loginButton" class="btn full" type="submit" disabled>Войти / зарегистрироваться</button>
     </form>
     <p id="loginMessage" class="message" role="status" aria-live="polite">Проверяем авторизацию…</p>
   </section>
@@ -301,7 +301,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       try {
         const {error} = await client.auth.signInWithOtp({
           email: $('email').value.trim(),
-          options: {emailRedirectTo: new URL('./',location.href).href}
+          options: {emailRedirectTo: new URL('./',location.href).href, shouldCreateUser: true}
         });
         if (error) throw error;
         setMessage('loginMessage', 'Письмо отправлено. Откройте ссылку для входа.');
