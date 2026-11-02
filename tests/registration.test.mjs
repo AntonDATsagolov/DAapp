@@ -79,13 +79,13 @@ for(const app of appNames) {
     const call = result.calls[0];
     assert.equal(call.email,'test-registration@example.invalid');
     assert.equal(call.options.emailRedirectTo,result.location.href);
-    assert.equal(call.options.shouldCreateUser, app !== 'admin-app',
-      'Admin must never sign up new accounts; public apps must allow it');
+    assert.equal(call.options.shouldCreateUser, false,
+      'Legacy email sign-in must not create duplicate accounts; register through account-app');
     assert.equal(result.controls.get('email').value,call.email);
     if (app === 'admin-app') {
       assert.match(result.html,/саморегистрация здесь отключена/);
     } else {
-      assert.match(result.html,/зарегистрироваться|регистрация/i);
+      assert.match(result.html,/account-app\/\?next=/i);
     }
     assert.doesNotMatch(result.html,/emailRedirectTo:\s*['"]http:\/\/localhost/i);
   });
