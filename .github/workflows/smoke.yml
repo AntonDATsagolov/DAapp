@@ -68,6 +68,10 @@ jobs:
           set -euo pipefail
           command -v psql
           psql -v ON_ERROR_STOP=1 -f tests/db/setup.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/001_profiles_initial.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/002_backfill_existing_profiles.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/003_ensure_own_profile.sql
+          psql -v ON_ERROR_STOP=1 -f tests/db/user-registration.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/004_shieli_public_map_places.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/005_shieli_place_submissions.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/006_shieli_admin_moderation.sql
