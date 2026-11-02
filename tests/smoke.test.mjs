@@ -415,6 +415,32 @@ test('Driver SQL 007 keeps private data in RLS and allows only reviewed drivers 
   assert.ok(!html.includes('innerHTML'));
 });
  
+test('Unified member UI has phone/password signup, verified SMS and legacy migration', () => {
+  const html=read('account-app/index.html');
+  const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(script);
+  assert.doesNotThrow(()=>new AsyncFunction(script));
+  for(const id of ['signupForm','signupUsername','signupPhone','signupPassword','signupAge',
+                   'smsForm','smsCode','loginForm','linkPhoneForm','linkVerifyForm','memberPanel']) {
+    assert.ok(html.includes('id="'+id+'"'),id);
+  }
+  assert.ok(html.includes("import('./auth.js')"));
+  assert.ok(html.includes('phone_change'));
+  const sql=read('supabase/migrations/008_unified_member_accounts.sql');
+  assert.ok(sql.includes('create table public.daapp_member_accounts'));
+  assert.ok(sql.includes('phone_confirmed_at'));
+  assert.ok(sql.includes("auth.uid()"));
+  assert.ok(sql.includes('enable row level security'));
+  assert.ok(sql.includes('grant execute on function public.daapp_claim_username'));
+  assert.ok(!sql.includes('grant select on public.daapp_member_accounts to anon'));
+  assert.ok(!sql.includes('alter table public.profiles'));
+  const fn=read('supabase/functions/daapp-username-login/index.ts');
+  assert.ok(fn.includes("getUserById"));
+  assert.ok(fn.includes("signInWithPassword"));
+  assert.ok(fn.includes("Invalid credentials"));
+  assert.ok(!html.includes('SUPABASE_SERVICE_ROLE_KEY'));
+});
+
 test('Profile backfill migration preserves existing rows and client-only default', () => {
   const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
   assert.match(sql, /insert into public\.profiles \(id, role\)/);
@@ -448,7 +474,10 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'admin-app/checks.js',
     'business-app/index.html',
     'driver-app/index.html',
-    'driver-app/driver.js'
+    'driver-app/driver.js',
+    'account-app/index.html',
+    'account-app/auth.js',
+    'supabase/functions/daapp-username-login/index.ts'
   ];
   for (const path of paths) {
     assert.doesNotMatch(read(path), /sb_secret_[A-Za-z0-9_-]{10,}/);

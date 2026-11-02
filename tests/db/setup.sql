@@ -15,7 +15,9 @@ create role authenticated nologin;
 create schema auth;
 create table auth.users (
   id uuid primary key,
-  email text unique
+  email text unique,
+  phone text,
+  phone_confirmed_at timestamptz
 );
 
 -- Supabase auth.uid() derives the caller from the verified JWT.

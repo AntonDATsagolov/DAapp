@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site
-          cp -R client-app business-app driver-app admin-app shared diagnostics _site/
+          cp -R client-app business-app driver-app admin-app account-app shared diagnostics _site/
           cat > _site/index.html <<'HTML'
           <!doctype html>
           <html lang="ru">
@@ -55,6 +55,8 @@ jobs:
           test -f _site/business-app/submissions.js
           test -f _site/driver-app/index.html
           test -f _site/driver-app/driver.js
+          test -f _site/account-app/index.html
+          test -f _site/account-app/auth.js
           test -f _site/shared/supabase.js
           test -f _site/diagnostics/index.html
           if grep -REq 'sb_secret_[A-Za-z0-9_-]{10,}' _site; then
@@ -87,7 +89,7 @@ jobs:
         run: |
           set -euo pipefail
           base="https://antondatsagolov.github.io/DAapp"
-          for path in client-app/ client-app/map.js client-app/places.js client-app/styles.css business-app/ business-app/submissions.js admin-app/ admin-app/checks.js driver-app/ driver-app/driver.js shared/supabase.js diagnostics/; do
+          for path in client-app/ client-app/map.js client-app/places.js client-app/styles.css business-app/ business-app/submissions.js admin-app/ admin-app/checks.js driver-app/ driver-app/driver.js account-app/ account-app/auth.js shared/supabase.js diagnostics/; do
             echo "Checking $base/$path"
             success=0
             for attempt in $(seq 1 15); do
@@ -109,8 +111,7 @@ jobs:
           set -euo pipefail
           base="https://antondatsagolov.github.io/DAapp"
           for app in client-app business-app driver-app admin-app; do
-            expected="shouldCreateUser: true"
-            [[ "$app" == admin-app ]] && expected="shouldCreateUser: false"
+            expected="shouldCreateUser: false"
             verified=0
             for attempt in $(seq 1 15); do
               if curl --fail --silent --show-error --location --max-time 15 \
@@ -126,8 +127,25 @@ jobs:
               echo "FAIL: registration/login code missing or stale for $app"
               exit 1
             fi
-            echo "PASS: $app uses passwordless OTP and explicit signup policy"
+            echo "PASS: $app uses legacy OTP without creating duplicate accounts"
           done
+
+      - name: Verify live unified account signup page
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://antondatsagolov.github.io/DAapp"
+          for attempt in $(seq 1 15); do
+            if curl --fail --silent --show-error --location --max-time 15 "$base/account-app/" -o /tmp/daapp-new-auth.html &&
+                grep -Fq "signupForm" /tmp/daapp-new-auth.html &&
+                grep -Fq "smsForm" /tmp/daapp-new-auth.html; then
+              echo "PASS: public unified identity page is available"
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "Unified account registration page not published correctly"
+          exit 1
 
       - name: Report Supabase Auth availability (no credentials)
         shell: bash
