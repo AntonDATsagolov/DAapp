@@ -190,7 +190,7 @@ test('Profiles migration has RLS and column-restricted updates', () => {
   assert.match(sql, /profile_read_self/);
   assert.match(sql, /profile_update_self/);
   assert.match(sql, /grant update\s*\(\s*full_name\s*,\s*phone_number\s*\)/);
-  assert.ok(sql.includes("to_regclass('public.map_places')"));
+  assert.ok(sql.includes("to_regclass('public.profiles')"));
 });
 
 test('Profile can load, save only permitted fields, clear, and handle missing rows', async () => {
