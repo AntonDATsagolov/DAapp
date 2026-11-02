@@ -417,7 +417,7 @@ test('Driver SQL 007 keeps private data in RLS and allows only reviewed drivers 
  
 test('Unified member UI has phone/password signup, verified SMS and legacy migration', () => {
   const html=read('account-app/index.html');
-  const script=html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+  const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script);
   assert.doesNotThrow(()=>new AsyncFunction(script));
   for(const id of ['signupForm','signupUsername','signupPhone','signupPassword','signupAge',
