@@ -148,6 +148,78 @@ test('Shieli place migration is admin-write-only with published-row RLS', () => 
   assert.doesNotMatch(sql, /grant (insert|update|delete)/i);
 });
 
+test('Business applications validate Shieli data and never choose user ID or status', async () => {
+  const source = read('business-app/submissions.js').replace(/^export /gm, '');
+  const { validateSubmission, parseOptionalCoordinates, submitPlace, fetchOwnSubmissions } =
+    new Function(source + '\nreturn {validateSubmission, parseOptionalCoordinates, submitPlace, fetchOwnSubmissions};')();
+  const input = {
+    name: '  Магазин для теста  ', category: 'shop',
+    address: 'Шиели, улица Тестовая, 7',
+    contact_phone: '+7 700 123 45 67', coordinates: ''
+  };
+  const validated = validateSubmission(input);
+  assert.ok(validated.payload);
+  assert.deepEqual(Object.keys(validated.payload).sort(),
+    ['address','category','contact_phone','latitude','longitude','name']);
+  assert.equal(validated.payload.latitude, null);
+  assert.equal(validated.payload.longitude, null);
+  assert.equal(validated.payload.name, 'Магазин для теста');
+  assert.deepEqual(parseOptionalCoordinates('44.176, 66.74'), {latitude:44.176, longitude:66.74});
+  assert.equal(parseOptionalCoordinates('44.1, 65.0'), null);
+  assert.equal(parseOptionalCoordinates('1,2'), null);
+  assert.ok(validateSubmission({ ...input, category: 'owner' }).error);
+  assert.ok(validateSubmission({ ...input, coordinates: 'invalid' }).error);
+  assert.ok(validateSubmission({ ...input, name: '<' }).error);
+
+  let submitted;
+  const client = {
+    from(table) {
+      assert.equal(table, 'place_submissions');
+      return {
+        async insert(payload) {
+          submitted = payload;
+          return { error: null };
+        },
+        select(columns) {
+          assert.equal(columns, 'id,name,category,address,status,created_at');
+          return {
+            order(column, options) {
+              assert.equal(column, 'created_at');
+              assert.equal(options.ascending, false);
+              return { async limit(size) {
+                assert.equal(size, 20);
+                return {data: [{name:'Тест',status:'pending'}],error:null};
+              } };
+            }
+          };
+        }
+      };
+    }
+  };
+  assert.equal((await submitPlace(client, input)).success, true);
+  assert.deepEqual(Object.keys(submitted).sort(), Object.keys(validated.payload).sort());
+  const own = await fetchOwnSubmissions(client);
+  assert.equal(own.length,1);
+  assert.equal(own[0].status,'pending');
+  assert.ok(!source.includes('.update('));
+  assert.ok(!source.includes('.delete('));
+});
+
+test('Migration 005: applicant-only RLS and no browser moderation permissions', () => {
+  const sql = read('supabase/migrations/005_shieli_place_submissions.sql');
+  assert.ok(sql.includes("to_regclass('public.place_submissions')"));
+  assert.ok(sql.includes("default auth.uid()"));
+  assert.ok(sql.includes("default 'pending'"));
+  assert.ok(sql.includes('alter table public.place_submissions enable row level security'));
+  assert.ok(sql.includes('using (applicant_id = (select auth.uid()))'));
+  assert.ok(sql.includes("with check (applicant_id = (select auth.uid()) and status = 'pending')"));
+  assert.ok(sql.includes('revoke all on public.place_submissions from public, anon, authenticated'));
+  assert.ok(sql.includes('grant insert (name, category, address, contact_phone, latitude, longitude)'));
+  assert.ok(!sql.includes('grant update'));
+  assert.ok(!sql.includes('grant delete'));
+  assert.ok(!sql.includes('alter table public.map_places'));
+});
+
 test('Profile backfill migration preserves existing rows and client-only default', () => {
   const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
   assert.match(sql, /insert into public\.profiles \(id, role\)/);
@@ -176,6 +248,7 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'client-app/profile.js',
     'client-app/map.js',
     'client-app/places.js',
+    'business-app/submissions.js',
     'business-app/index.html',
     'driver-app/index.html'
   ];
