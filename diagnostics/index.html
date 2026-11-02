@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f8fa">
+<title>DAapp — Проверка подключения</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#192637;background:#f5f8fa}
+*{box-sizing:border-box}body{margin:0}main{max-width:480px;margin:auto;padding:24px 18px 40px}
+h1{font-size:1.6rem;margin:0 0 8px}p{line-height:1.5;color:#586475}
+.panel{background:white;border-radius:16px;padding:18px;margin:20px 0;box-shadow:0 2px 14px #1d33400e}
+.item{padding:12px 0;border-bottom:1px solid #edf0f2}.item:last-child{border:0}
+.item strong{display:block}.result{font-size:.9rem;color:#576477;margin-top:4px;overflow-wrap:anywhere}
+.ok{color:#14704d}.bad{color:#aa3030}a{color:#095ca0}
+button{border:0;border-radius:12px;background:#167352;color:white;font:inherit;font-weight:600;padding:12px 16px;min-height:46px;cursor:pointer}
+small{display:block;margin-top:8px;color:#667786;line-height:1.5}code{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+<h1>DAapp · Диагностика</h1>
+<p>Эта проверка помогает понять, что мешает открыть приложение: файлы сайта, интернет, библиотека Supabase или сервис авторизации.</p>
+<div class="panel">
+  <div class="item"><strong>1. Страница приложения</strong><div class="result" id="page">Проверяется…</div></div>
+  <div class="item"><strong>2. Общий JavaScript</strong><div class="result" id="shared">Проверяется…</div></div>
+  <div class="item"><strong>3. Supabase JS (внешняя библиотека)</strong><div class="result" id="sdk">Проверяется…</div></div>
+  <div class="item"><strong>4. Сервер Supabase Auth</strong><div class="result" id="auth">Проверяется…</div></div>
+  <small>Проверка не регистрирует пользователей, не читает личные данные и не отправляет письма.</small>
+</div>
+<button type="button" id="repeat">Проверить снова</button>
+<p><a href="../client-app/">Вернуться в приложение</a></p>
+<div class="panel">
+  <strong>Если письмо для входа не приходит или открывает localhost</strong>
+  <p>В Supabase → Authentication → URL Configuration добавьте этот точный адрес в Redirect URLs:</p>
+  <code id="redirect"></code>
+  <p>Включите Email provider в Authentication → Providers.</p>
+  <a href="https://supabase.com/dashboard/project/huajxbmapmlprcyytsvu/auth/url-configuration" rel="noopener noreferrer" target="_blank">Открыть настройки Supabase</a>
+</div>
+<script type="module">
+const $ = id => document.getElementById(id);
+const ready = (id, ok, message) => {
+  const el = $(id);
+  el.className = 'result ' + (ok ? 'ok' : 'bad');
+  el.textContent = (ok ? '✓ ' : '✕ ') + message;
+};
+const root = new URL('../', location.href);
+$('redirect').textContent = new URL('client-app/', root).href;
+
+async function fetchWithTimeout(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try { return await fetch(url, { cache: 'no-store', signal: controller.signal }); }
+  finally { clearTimeout(timer); }
+}
+async function checkFile(id, path) {
+  try {
+    const response = await fetchWithTimeout(new URL(path, root));
+    ready(id, response.ok, response.ok ? 'Доступен, HTTP ' + response.status : 'Ошибка HTTP ' + response.status);
+  } catch(error) {
+    ready(id, false, 'Нет доступа: ' + (error.name === 'AbortError' ? 'истекло время ожидания' : 'ошибка сети'));
+  }
+}
+async function checkSdk() {
+  try {
+    const module = await import('../shared/supabase.js');
+    if (!module.supabase) throw new Error('Клиент не создан');
+    ready('sdk', true, 'Библиотека Supabase загружена.');
+  } catch(error) {
+    ready('sdk', false, 'Не удалось загрузить Supabase JS. Проверьте интернет или доступ к CDN.');
+    console.error('DAapp SDK:', error);
+  }
+}
+async function checkAuth() {
+  try {
+    // Публичная проверка доступности Auth, без обращения к таблицам и личным данным.
+    const response = await fetchWithTimeout('https://huajxbmapmlprcyytsvu.supabase.co/auth/v1/health');
+    ready('auth', response.ok, response.ok
+      ? 'Сервер отвечает, HTTP ' + response.status
+      : 'Сервер вернул HTTP ' + response.status);
+  } catch(error) {
+    ready('auth', false, 'Соединение с Supabase не удалось (возможно сеть, CORS или блокировка).');
+    console.error('DAapp Auth health:', error);
+  }
+}
+async function run() {
+  $('repeat').disabled = true;
+  for (const id of ['page','shared','sdk','auth']) {
+    $(id).className = 'result';
+    $(id).textContent = 'Проверяется…';
+  }
+  // Прямые HTTP-проверки не зависят от SDK.
+  await Promise.all([
+    checkFile('page','client-app/'),
+    checkFile('shared','shared/supabase.js'),
+    checkSdk(),
+    checkAuth()
+  ]);
+  $('repeat').disabled = false;
+}
+$('repeat').addEventListener('click', run);
+void run();
+</script>
+</main>
+</body>
+</html>

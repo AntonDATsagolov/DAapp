@@ -21,10 +21,19 @@ test('Three mobile screens have valid inline JS and viewport metadata', () => {
   }
 });
 
+test('Diagnostics page has valid inline JavaScript', () => {
+  const html = read('diagnostics/index.html');
+  assert.match(html, /DAapp · Диагностика/);
+    const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(script);
+  assert.doesNotThrow(() => new AsyncFunction(script));
+});
+
 test('Shared Supabase and client profile modules have valid JS', () => {
   let shared = read('shared/supabase.js');
   shared = shared.replace(/^import .*;$/gm, '').replace(/export const/g, 'const');
-  assert.doesNotThrow(() => new Function('createClient', shared));
+  assert.doesNotThrow(() => new AsyncFunction(shared));
+  assert.ok(shared.includes('esm.sh'));
 
   let profile = read('client-app/profile.js');
   profile = profile.replace(/^import .*;$/gm, '').replace('export function', 'function');

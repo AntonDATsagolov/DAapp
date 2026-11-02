@@ -56,6 +56,7 @@
     </section>
 
     <p id="message" class="message" role="status" aria-live="polite">Проверяем авторизацию…</p>
+    <p><a href="../diagnostics/">Не открывается или не входит? Проверить подключение</a></p>
   </main>
 
   <script type="module">
@@ -83,7 +84,7 @@
         saveButton: document.querySelector('#saveButton')
       });
 
-      let displayedUserId = null;
+      let displayedUserId = undefined; // Первую пустую сессию тоже нужно обработать.
 
       function displaySession(session) {
         const user = session?.user ?? null;
@@ -129,7 +130,8 @@
           message.textContent = 'Если адрес доступен для входа, проверьте почту и откройте ссылку на этом устройстве.';
         } catch (error) {
           console.error('Ошибка входа:', error);
-          message.textContent = 'Не удалось отправить ссылку. Проверьте интернет и настройки Supabase Auth.';
+          const code = String(error.code || error.status || 'network_error').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+          message.textContent = 'Ошибка отправки письма (' + code + '). Проверьте настройки Email и Redirect URLs в Supabase.';
         } finally {
           sendButton.disabled = false;
         }
@@ -152,7 +154,7 @@
     } catch (error) {
       console.error('Ошибка инициализации DAapp:', error);
       sendButton.disabled = true;
-      message.textContent = 'Нет подключения к сервису. Проверьте интернет и обновите страницу.';
+      message.textContent = 'Не удалось загрузить библиотеку Supabase или проверить вход. Откройте «Проверить подключение» ниже для диагностики.';
     }
   </script>
 </body>
