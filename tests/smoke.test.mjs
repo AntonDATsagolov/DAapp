@@ -21,6 +21,15 @@ test('Three mobile screens have valid inline JS and viewport metadata', () => {
   }
 });
 
+test('Public diagnostics show all DAapp authentication redirects', () => {
+  const html = read('diagnostics/index.html');
+  for (const id of ['redirectClient','redirectBusiness','redirectDriver','redirectAdmin']) {
+    assert.ok(html.includes('id="' + id + '"'), 'Missing login redirect: ' + id);
+  }
+  assert.match(html, /Allow new users to sign up/);
+  assert.match(html, /SMTP/);
+});
+
 test('Diagnostics page has valid inline JavaScript', () => {
   const html = read('diagnostics/index.html');
   assert.match(html, /DAapp · Диагностика/);
