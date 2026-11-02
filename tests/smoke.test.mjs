@@ -133,18 +133,18 @@ test('Shieli public places validate records and filter by category', async () =>
   assert.equal(steps.filter(x => x === 'gte').length, 2);
   assert.equal(steps.filter(x => x === 'lte').length, 2);
   assert.ok(steps.includes('limit'));
-  assert.doesNotMatch(source, /\\.insert\\(|\\.update\\(|\\.delete\\(/);
+  for (const action of ['.insert(', '.update(', '.delete(']) assert.ok(!source.includes(action));
 });
 
 test('Shieli place migration is admin-write-only with published-row RLS', () => {
   const sql = read('supabase/migrations/004_shieli_public_map_places.sql');
-  assert.match(sql, /to_regclass\\('public\\.map_places'\\)/);
-  assert.match(sql, /alter table public\\.map_places enable row level security/);
+  assert.ok(sql.includes("to_regclass('public.map_places')"));
+  assert.ok(sql.includes('alter table public.map_places enable row level security'));
   assert.match(sql, /for select to anon, authenticated/);
-  assert.match(sql, /using \\(is_published = true\\)/);
+  assert.ok(sql.includes('using (is_published = true)'));
   assert.match(sql, /default false/);
-  assert.match(sql, /revoke all on public\\.map_places from public, anon, authenticated/);
-  assert.match(sql, /grant select \\(/);
+  assert.ok(sql.includes('revoke all on public.map_places from public, anon, authenticated'));
+  assert.ok(sql.includes('grant select ('));
   assert.doesNotMatch(sql, /grant (insert|update|delete)/i);
 });
 
@@ -190,7 +190,7 @@ test('Profiles migration has RLS and column-restricted updates', () => {
   assert.match(sql, /profile_read_self/);
   assert.match(sql, /profile_update_self/);
   assert.match(sql, /grant update\s*\(\s*full_name\s*,\s*phone_number\s*\)/);
-  assert.match(sql, /to_regclass\('public\.profiles'\)/);
+  assert.ok(sql.includes("to_regclass('public.map_places')"));
 });
 
 test('Profile can load, save only permitted fields, clear, and handle missing rows', async () => {
