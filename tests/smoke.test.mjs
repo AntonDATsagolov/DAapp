@@ -331,6 +331,81 @@ test('Migration 006 restricts admin membership, queue and verified publication',
   assert.ok(!sql.includes('grant insert on public.map_places'));
 });
 
+test('Driver app provides functional onboarding UI instead of a Supabase placeholder', () => {
+  const html = read('driver-app/index.html');
+  const script = html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+  assert.ok(script && script.includes("import('./driver.js')"));
+  assert.doesNotThrow(() => new AsyncFunction(script));
+  for (const id of ['driverForm','registrationPanel','reviewPanel','linePanel','goOnline','goOffline','logoutButton','driverReviewLabel','contactPhone','vehiclePlate']) {
+    assert.ok(html.includes('id="' + id + '"'), 'Missing functional driver control: ' + id);
+  }
+  assert.ok(html.includes('Заказы пока не подключены'));
+  assert.ok(!html.includes('Клиент Supabase инициализирован. Функции будут добавлены поэтапно.'));
+});
+
+test('Driver validation and server-only approval / line operations', async () => {
+  const source = read('driver-app/driver.js').replace(/^export /gm,'');
+  const api = new Function(source + '\nreturn {validateDriver,fetchDriverRegistration,submitDriverRegistration,setDriverAvailability};')();
+  const fields = {full_name:'  Тест Водитель ',contact_phone:' +77000001122 ',
+    vehicle_type:'passenger',vehicle_model:' Toyota Camry ',vehicle_plate:' 123 abc 11 '};
+  const validation = api.validateDriver(fields);
+  assert.deepEqual(Object.keys(validation.payload).sort(),
+    ['contact_phone','full_name','vehicle_model','vehicle_plate','vehicle_type']);
+  assert.equal(validation.payload.vehicle_plate,'123 ABC 11');
+  assert.ok(api.validateDriver({...fields,vehicle_type:'admin'}).error);
+  assert.ok(api.validateDriver({...fields,full_name:'a'}).error);
+  assert.ok(api.validateDriver({...fields,vehicle_plate:'ab'}).error);
+  let inserted=null, rpcName=null, rpcParams=null;
+  const mock = {
+    from(table) {
+      assert.equal(table,'driver_registrations');
+      return {
+        async insert(values) { inserted=values; return {error:null}; },
+        select(columns) {
+          assert.equal(columns,'user_id,full_name,contact_phone,vehicle_type,vehicle_model,vehicle_plate,review_status,is_online,created_at');
+          return { async maybeSingle() {return {data:{review_status:'pending'},error:null};} };
+        }
+      };
+    },
+    async rpc(name, params) { rpcName=name;rpcParams=params;return {data:params.p_online,error:null}; }
+  };
+  assert.equal((await api.submitDriverRegistration(mock,fields)).success,true);
+  assert.deepEqual(Object.keys(inserted).sort(),Object.keys(validation.payload).sort());
+  assert.equal((await api.fetchDriverRegistration(mock)).review_status,'pending');
+  assert.deepEqual(await api.setDriverAvailability(mock,true),{success:true,is_online:true});
+  assert.equal(rpcName,'daapp_driver_set_online');
+  assert.deepEqual(rpcParams,{p_online:true});
+  assert.ok(!source.includes('.update('));
+  assert.ok(!source.includes("from('profiles')"));
+  assert.ok(!source.includes('service_role'));
+});
+
+test('Driver SQL 007 keeps private data in RLS and allows only reviewed drivers online', () => {
+  const sql=read('supabase/migrations/007_shieli_driver_onboarding.sql');
+  assert.ok(sql.includes("to_regclass('public.driver_registrations')"));
+  assert.ok(sql.includes("to_regclass('public.daapp_admins')"));
+  assert.ok(sql.includes('alter table public.driver_registrations enable row level security'));
+  assert.ok(sql.includes('user_id = (select auth.uid())'));
+  assert.ok(sql.includes("review_status = 'pending'"));
+  assert.ok(sql.includes('is_online = false'));
+  assert.ok(sql.includes('grant insert (full_name, contact_phone, vehicle_type, vehicle_model, vehicle_plate)'));
+  assert.ok(sql.includes('revoke all on public.driver_registrations from public, anon, authenticated'));
+  assert.ok(sql.includes('update public.driver_registrations'));
+  assert.ok(sql.includes("review_status = 'approved'"));
+  assert.ok(sql.includes('from public.daapp_admins a where a.user_id = v_actor'));
+  assert.ok(sql.includes("set search_path = ''"));
+  assert.ok(sql.includes('grant execute on function public.daapp_driver_set_online(boolean)'));
+  assert.ok(sql.includes('grant execute on function public.daapp_admin_review_driver(uuid,text)'));
+  assert.ok(!sql.includes('grant update (review_status'));
+  assert.ok(!sql.includes('grant select on public.driver_registrations to anon'));
+  const html=read('admin-app/index.html');
+  assert.ok(html.includes('id="driverQueue"'));
+  assert.ok(html.includes("rpc('daapp_admin_list_drivers')"));
+  assert.ok(html.includes("rpc('daapp_admin_review_driver'"));
+  assert.ok(html.includes('check.checked'));
+  assert.ok(!html.includes('innerHTML'));
+});
+ 
 test('Profile backfill migration preserves existing rows and client-only default', () => {
   const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
   assert.match(sql, /insert into public\.profiles \(id, role\)/);
@@ -363,7 +438,8 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'admin-app/index.html',
     'admin-app/checks.js',
     'business-app/index.html',
-    'driver-app/index.html'
+    'driver-app/index.html',
+    'driver-app/driver.js'
   ];
   for (const path of paths) {
     assert.doesNotMatch(read(path), /sb_secret_[A-Za-z0-9_-]{10,}/);
