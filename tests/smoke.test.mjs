@@ -215,6 +215,7 @@ test('Migration 005: applicant-only RLS and no browser moderation permissions', 
   assert.ok(sql.includes("with check (applicant_id = (select auth.uid()) and status = 'pending')"));
   assert.ok(sql.includes('revoke all on public.place_submissions from public, anon, authenticated'));
   assert.ok(sql.includes('grant insert (name, category, address, contact_phone, latitude, longitude)'));
+  assert.ok(sql.includes('(latitude is not null and longitude is not null'));
   assert.ok(!sql.includes('grant update'));
   assert.ok(!sql.includes('grant delete'));
   assert.ok(!sql.includes('alter table public.map_places'));
