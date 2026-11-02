@@ -52,9 +52,9 @@ test('Map module parses coordinates and rejects invalid positions', () => {
   assert.equal(parseCoordinates('44, 181'), null);
   assert.equal(parseCoordinates('не координаты'), null);
   assert.equal(parseCoordinates(''), null);
-  assert.match(source, /tile\\.openstreetmap\\.org/);
+  assert.ok(source.includes('tile.openstreetmap.org'));
   assert.match(source, /OpenStreetMap/);
-  assert.match(source, /navigator\\.geolocation/);
+  assert.ok(source.includes('navigator.geolocation'));
 });
 
 test('Mobile DAapp map is publicly accessible without login', () => {
@@ -64,7 +64,7 @@ test('Mobile DAapp map is publicly accessible without login', () => {
   assert.match(html, /id="mapTab"/);
   assert.match(html, /id="profileTab"/);
   assert.match(html, /id="categoryButtons"/);
-  assert.match(html, /import\\('\.\\/map\\.js'\\)/);
+  assert.ok(html.includes("import('./map.js')"));
   assert.match(html, /createProfileController/);
   assert.match(html, /id="loginForm"/);
   assert.match(css, /height:100dvh/);
