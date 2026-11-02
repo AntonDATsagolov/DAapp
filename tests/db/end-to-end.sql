@@ -76,6 +76,13 @@ begin
    raise exception 'Non-admin accessed moderation queue';
  exception when insufficient_privilege then null;
  end;
+ begin
+   perform public.daapp_admin_review_submission(
+     '00000000-0000-4000-8000-000000000001', 'rejected',null,null,null
+   );
+   raise exception 'Non-admin managed to invoke moderation';
+ exception when insufficient_privilege then null;
+ end;
 end;
 $$;
 
@@ -144,8 +151,14 @@ begin
 end;
 $$;
 
-\echo 'DAapp DB integration: public anonymous user sees approved pin only'
+\echo 'DAapp DB integration: unpublished draft is not visible to anonymous clients'
 reset role;
+insert into public.map_places
+  (name,category,address,latitude,longitude,is_published)
+values
+  ('CI Hidden Draft','shop','Shieli, hidden draft',44.176,66.74,false);
+
+\echo 'DAapp DB integration: public anonymous user sees approved pin only'
 set role anon;
 set request.jwt.claim.sub = '';
 do $$
@@ -185,8 +198,9 @@ begin
      where decision = 'rejected' and published_place_id is null) <> 1 then
    raise exception 'Rejected action unexpectedly published a place';
  end if;
- if (select count(*) from public.map_places) <> 1 then
-   raise exception 'Exactly one approved map point expected';
+ if (select count(*) from public.map_places where is_published = true) <> 1
+    or (select count(*) from public.map_places where is_published = false) <> 1 then
+   raise exception 'Expected one published pin and one hidden draft';
  end if;
 end;
 $$;
