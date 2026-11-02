@@ -1,3 +1,12 @@
+-- Refuse accidental execution in a real Supabase project.
+do $$
+begin
+  if current_database() <> 'daapp_ci' then
+    raise exception 'CI test only: expected disposable database daapp_ci';
+  end if;
+end;
+$$;
+
 -- Integration-only Supabase Auth emulation for disposable PostgreSQL 16 CI.
 -- NEVER run this file in your real Supabase project.
 create role anon nologin;
