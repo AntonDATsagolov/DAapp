@@ -221,6 +221,50 @@ test('Migration 005: applicant-only RLS and no browser moderation permissions', 
   assert.ok(!sql.includes('alter table public.map_places'));
 });
 
+test('Moderation admin UI keeps account authorization server-side', () => {
+  const html = read('admin-app/index.html');
+  assert.match(html, /<meta name="viewport"/);
+  assert.ok(html.includes("import('../shared/supabase.js')"));
+  assert.ok(html.includes("from('daapp_admins')"));
+  assert.ok(html.includes("rpc('daapp_admin_list_submissions')"));
+  assert.ok(html.includes("rpc('daapp_admin_review_submission'"));
+  assert.ok(html.includes('verifiedCheckbox'));
+  assert.ok(html.includes('phoneConsent'));
+  assert.ok(html.includes('verifiedLatitude'));
+  assert.ok(html.includes('verifiedLongitude'));
+  assert.ok(html.includes("new URL('./',location.href).href"));
+  assert.ok(!html.includes("from('map_places')"));
+  assert.ok(!html.includes("from('place_submissions')"));
+  assert.ok(!html.includes('innerHTML'));
+  const script = html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+  assert.ok(script);
+  assert.doesNotThrow(() => new AsyncFunction(script));
+});
+
+test('Migration 006 restricts admin membership, queue and verified publication', () => {
+  const sql = read('supabase/migrations/006_shieli_admin_moderation.sql');
+  assert.ok(sql.includes("to_regclass('public.daapp_admins')"));
+  assert.ok(sql.includes("to_regclass('public.daapp_moderation_log')"));
+  assert.ok(sql.includes('alter table public.daapp_admins enable row level security'));
+  assert.ok(sql.includes('revoke all on public.daapp_admins from public, anon, authenticated'));
+  assert.ok(sql.includes('grant select (user_id) on public.daapp_admins to authenticated'));
+  assert.ok(sql.includes('alter table public.daapp_moderation_log enable row level security'));
+  assert.ok(sql.includes('from public.daapp_admins a where a.user_id = v_actor'));
+  assert.ok(sql.includes('security definer'));
+  assert.ok(sql.includes("set search_path = ''"));
+  assert.ok(sql.includes('for update'));
+  assert.ok(sql.includes("s.status = 'pending'"));
+  assert.ok(sql.includes('p_latitude between 44.05 and 44.31'));
+  assert.ok(sql.includes('p_longitude between 66.55 and 66.94'));
+  assert.ok(sql.includes('insert into public.map_places'));
+  assert.ok(sql.includes('v_phone, p_latitude, p_longitude, true'));
+  assert.ok(sql.includes('insert into public.daapp_moderation_log'));
+  assert.ok(sql.includes('grant execute on function public.daapp_admin_review_submission'));
+  assert.ok(!sql.includes('grant insert on public.daapp_admins'));
+  assert.ok(!sql.includes('grant update on public.place_submissions'));
+  assert.ok(!sql.includes('grant insert on public.map_places'));
+});
+
 test('Profile backfill migration preserves existing rows and client-only default', () => {
   const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
   assert.match(sql, /insert into public\.profiles \(id, role\)/);
@@ -250,6 +294,7 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'client-app/map.js',
     'client-app/places.js',
     'business-app/submissions.js',
+    'admin-app/index.html',
     'business-app/index.html',
     'driver-app/index.html'
   ];
