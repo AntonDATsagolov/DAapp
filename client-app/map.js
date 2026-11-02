@@ -1,11 +1,11 @@
 // DAapp / Шаг 6. Карта поселка. Работает без авторизации.
 // Список организаций и их координаты появятся отдельным этапом разработки.
 
-export const DEFAULT_CENTER = [44.85278, 65.50917]; // Кызылорда — временный центр для демонстрации.
+export const DEFAULT_CENTER = [44.17603, 66.74096]; // Шиели (Шиелі), Кызылординская область — населённый пункт OSM.
 export const DEFAULT_ZOOM = 13;
 
 export function parseCoordinates(value) {
-  // Пользователь вводит пару десятичных координат: 44.8528, 65.5092
+  // Пользователь вводит пару десятичных координат: 44.1760, 66.7410
   const parts = String(value).trim().split(/[,;\s]+/).filter(Boolean);
   if (parts.length !== 2) return null;
   const lat = Number(parts[0]);
@@ -149,7 +149,7 @@ export async function initVillageMap({
     event.preventDefault();
     const position = parseCoordinates(coordinateInput.value);
     if (!position) {
-      status('Введите широту и долготу через запятую, например: 44.8528, 65.5092');
+      status('Введите широту и долготу через запятую, например: 44.1760, 66.7410');
       return;
     }
     if (!map) {
