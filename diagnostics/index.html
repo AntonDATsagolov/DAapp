@@ -75,9 +75,14 @@ async function checkAuth() {
   try {
     // Публичная проверка доступности Auth, без обращения к таблицам и личным данным.
     const response = await fetchWithTimeout('https://huajxbmapmlprcyytsvu.supabase.co/auth/v1/health');
-    ready('auth', response.ok, response.ok
-      ? 'Сервер отвечает, HTTP ' + response.status
-      : 'Сервер вернул HTTP ' + response.status);
+    // Проверка без API-ключа может возвращать HTTP 401 — это нормальный
+    // ответ защищённого API, а не признак отсутствия соединения.
+    const reachable = response.ok || response.status === 401;
+    ready('auth', reachable, response.status === 401
+      ? 'Сервер доступен (HTTP 401: нужен API-ключ; для этой проверки это нормально).'
+      : response.ok
+        ? 'Сервер отвечает, HTTP ' + response.status
+        : 'Сервер вернул HTTP ' + response.status);
   } catch(error) {
     ready('auth', false, 'Соединение с Supabase не удалось (возможно сеть, CORS или блокировка).');
     console.error('DAapp Auth health:', error);
