@@ -333,7 +333,7 @@ test('Migration 006 restricts admin membership, queue and verified publication',
 
 test('Driver app provides functional onboarding UI instead of a Supabase placeholder', () => {
   const html = read('driver-app/index.html');
-  const script = html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+  const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script && script.includes("import('./driver.js')"));
   assert.doesNotThrow(() => new AsyncFunction(script));
   for (const id of ['driverForm','registrationPanel','reviewPanel','linePanel','goOnline','goOffline','logoutButton','driverReviewLabel','contactPhone','vehiclePlate']) {
