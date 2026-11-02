@@ -23,7 +23,8 @@ create table public.place_submissions (
   longitude double precision,
   constraint shieli_submission_coordinates check (
     (latitude is null and longitude is null) or
-    (latitude between 44.05 and 44.31 and longitude between 66.55 and 66.94)
+    (latitude is not null and longitude is not null and
+     latitude between 44.05 and 44.31 and longitude between 66.55 and 66.94)
   ),
   status text not null default 'pending'
     check (status in ('pending','approved','rejected')),
