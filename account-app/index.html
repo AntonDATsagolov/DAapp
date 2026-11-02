@@ -225,7 +225,6 @@ $('loginForm').addEventListener('submit',async(event)=>{
   event.preventDefault();
   $('loginButton').disabled=true;set('loginMessage','Проверяем данные…');
   try {
-    const endpoint=new URL('../functions-placeholder/',location.href);
     // Endpoint always points at the project's Edge Function, not a public username list.
     const result=await helpers.signInAccount(supabase,$('loginId').value,
       $('loginPassword').value,{usernameEndpoint:'https://huajxbmapmlprcyytsvu.supabase.co/functions/v1/daapp-username-login'});
