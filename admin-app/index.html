@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#183d30">
+<meta name="description" content="DAapp — защищённая модерация заявок организаций Шиели">
+<title>DAapp Admin — Шиели</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#f4f7f5;color:#172e25}
+*{box-sizing:border-box}body{margin:0}
+main{max-width:980px;margin:auto;padding:22px 17px 76px;min-height:100dvh}
+a{color:#155e46}button,input,textarea{font:inherit}
+button{cursor:pointer}button:disabled{opacity:.52;cursor:wait}
+[hidden]{display:none!important}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.logo{font-size:1.7rem;font-weight:850;letter-spacing:-.06em;color:#145b43;text-decoration:none}
+.eyebrow{font-size:.73rem;color:#658373;font-weight:780}
+h1{font-size:1.8rem;letter-spacing:-.04em;margin:26px 0 5px}
+h2{font-size:1.11rem;letter-spacing:-.02em;margin:0 0 10px}
+p{font-size:.89rem;line-height:1.55;color:#62736a}
+.card{border:1px solid #e3eae5;border-radius:18px;background:white;padding:20px;margin-top:18px;box-shadow:0 5px 22px #17382008}
+.note{padding:12px 14px;background:#eaf3ed;color:#27563e;border-radius:11px;font-size:.83rem;line-height:1.5}
+label{display:block;font-size:.82rem;font-weight:730;margin:15px 0 7px}
+input{border:1px solid #c7d9cd;border-radius:11px;min-height:45px;padding:10px 12px;background:#fff;color:#183528;width:100%}
+input:focus-visible,button:focus-visible{outline:2px solid #73b28c;outline-offset:2px}
+.btn{border:0;border-radius:11px;padding:12px 14px;background:#176347;color:white;font-weight:760;min-height:45px}
+.btn.alt{background:#e7f0e8;color:#19573b}
+.btn.danger{background:#8a3b3b}
+.btn.block{width:100%;margin-top:14px}
+.status{font-size:.83rem;color:#3e654e;min-height:20px;overflow-wrap:anywhere;line-height:1.5}
+.grid{display:grid;gap:16px}
+.queue{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow:auto}
+.item{background:#f7faf8;text-align:left;border:1px solid #e1e9e2;border-radius:12px;padding:12px 14px;min-height:65px;color:#193a2c}
+.item[aria-pressed=true]{border-color:#176347;box-shadow:0 0 0 1px #176347}
+.item strong{display:block;font-size:.9rem;margin-bottom:4px;overflow-wrap:anywhere}
+.item span{font-size:.75rem;color:#677c6f;overflow-wrap:anywhere}
+.detail{font-size:.86rem;overflow-wrap:anywhere}
+.detail dt{font-size:.74rem;color:#698072;font-weight:750;margin-top:15px}
+.detail dd{margin:4px 0 0;white-space:pre-wrap}
+.checkbox-row{display:flex;gap:10px;align-items:flex-start;font-size:.83rem;font-weight:620;line-height:1.5;margin-top:17px}
+.checkbox-row input{min-height:18px;width:18px;min-width:18px;margin:2px 0 0}
+.actions{display:grid;gap:9px;margin-top:19px}
+small{color:#74877a;font-size:.75rem}
+.mono{font:700 .78rem ui-monospace,monospace;word-break:break-all}
+footer{margin-top:28px;text-align:center;font-size:.79rem}
+@media(min-width:740px){main{padding:32px 25px 90px}.grid{grid-template-columns:1fr 1.05fr;align-items:start}.card{padding:23px}h1{font-size:2rem}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a class="logo" href="../client-app/">DAapp.</a>
+    <span class="eyebrow">АДМИНИСТРИРОВАНИЕ · ШИЕЛИ</span>
+  </header>
+  <h1>Проверка организаций</h1>
+  <p>Только уполномоченные администраторы могут просматривать заявки, отклонять их и публиковать проверенные точки на карте.</p>
+
+  <section id="loginPanel" class="card">
+    <h2>Вход администратора</h2>
+    <p>Войдите по электронной почте. Доступ определяет сервер Supabase, а не статус в браузере.</p>
+    <form id="loginForm">
+      <label for="email">Адрес электронной почты</label>
+      <input id="email" type="email" placeholder="name@example.com" autocomplete="email" required>
+      <button id="loginButton" class="btn block" type="submit" disabled>Получить ссылку для входа</button>
+    </form>
+    <p id="loginStatus" class="status" role="status" aria-live="polite">Проверяем сессию…</p>
+  </section>
+
+  <section id="accessPanel" class="card" hidden>
+    <h2>Требуется разрешение администратора</h2>
+    <p id="accessMessage">У аккаунта пока нет административного доступа.</p>
+    <p>Ваш идентификатор пользователя: <span class="mono" id="selfId"></span></p>
+    <p>Администратора добавляют только через доверенный Supabase SQL Editor. Нельзя выдать права самому себе из приложения.</p>
+    <button id="accessLogout" class="btn alt" type="button">Выйти</button>
+  </section>
+
+  <section id="adminPanel" hidden>
+    <div class="card">
+      <strong id="adminEmail"></strong>
+      <p class="note">При одобрении проверьте право заявителя представлять организацию, её название, адрес и точное положение. Публикация сразу делает место доступным всем пользователям DAapp.</p>
+      <button id="refreshButton" class="btn alt" type="button">Обновить очередь</button>
+      <button id="logoutButton" class="btn alt" type="button">Выйти</button>
+      <p id="queueStatus" class="status" role="status" aria-live="polite"></p>
+    </div>
+    <div class="grid">
+      <section class="card">
+        <h2>Ожидают проверки</h2>
+        <div id="queue" class="queue" aria-label="Заявки на модерацию"></div>
+      </section>
+      <section class="card">
+        <h2>Детали и решение</h2>
+        <p id="emptyDetails">Выберите заявку в списке слева.</p>
+        <div id="details" hidden>
+          <dl class="detail">
+            <dt>Название</dt><dd id="detailName"></dd>
+            <dt>Категория</dt><dd id="detailCategory"></dd>
+            <dt>Адрес</dt><dd id="detailAddress"></dd>
+            <dt>Контакт заявителя — не публикуется</dt><dd id="detailContact"></dd>
+            <dt>Координаты из заявки — НЕ ПРОВЕРЕНЫ</dt><dd id="detailCoordinates"></dd>
+          </dl>
+          <form id="approveForm">
+            <label for="verifiedLatitude">Проверенная широта</label>
+            <input id="verifiedLatitude" type="number" min="44.05" max="44.31" step="any" placeholder="44.176…" required>
+            <label for="verifiedLongitude">Проверенная долгота</label>
+            <input id="verifiedLongitude" type="number" min="66.55" max="66.94" step="any" placeholder="66.740…" required>
+            <small>Введите проверенную точку вручную. Из заявки координаты не переносятся автоматически.</small>
+            <label for="publicPhone">Публичный телефон (необязательно)</label>
+            <input id="publicPhone" type="tel" maxlength="40" placeholder="Только с разрешения владельца">
+            <label class="checkbox-row">
+              <input id="verifiedCheckbox" type="checkbox" required>
+              <span>Я проверил право заявителя, название, адрес и точное местоположение организации.</span>
+            </label>
+            <label class="checkbox-row">
+              <input id="phoneConsent" type="checkbox">
+              <span>Владелец разрешил публиковать телефон, если он указан выше.</span>
+            </label>
+            <div class="actions">
+              <button id="approveButton" class="btn block" type="submit">Одобрить и опубликовать</button>
+              <button id="rejectButton" class="btn danger block" type="button">Отклонить заявку</button>
+            </div>
+          </form>
+          <p id="reviewStatus" class="status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </div>
+  </section>
+  <footer><a href="../client-app/">Карта Шиели</a> · <a href="../business-app/">Приложение предпринимателя</a></footer>
+</main>
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  const loginPanel = $('loginPanel'), accessPanel = $('accessPanel'), adminPanel = $('adminPanel');
+  let client, activeUserId, epoch = 0, selected = null, queue = [], busy = false;
+  const categoryNames = { shop:'Магазин', cafe:'Кафе', beauty:'Красота', hotel:'Гостиница', taxi:'Такси' };
+
+  function showState(state) {
+    loginPanel.hidden = state !== 'login';
+    accessPanel.hidden = state !== 'access';
+    adminPanel.hidden = state !== 'admin';
+  }
+
+  function selectSubmission(submission) {
+    selected = submission;
+    $('details').hidden = !submission;
+    $('emptyDetails').hidden = Boolean(submission);
+    $('reviewStatus').textContent = '';
+    $('approveForm').reset(); // Never pre-fill unverified coordinates or contact phone.
+    for (const button of $('queue').querySelectorAll('button[data-id]'))
+      button.setAttribute('aria-pressed', String(button.dataset.id === submission?.id));
+    if (!submission) return;
+    $('detailName').textContent = submission.name || '';
+    $('detailCategory').textContent = categoryNames[submission.category] || submission.category || '';
+    $('detailAddress').textContent = submission.address || '';
+    $('detailContact').textContent = submission.contact_phone || '';
+    $('detailCoordinates').textContent =
+      submission.latitude == null || submission.longitude == null
+        ? 'Не указаны'
+        : submission.latitude + ', ' + submission.longitude;
+  }
+
+  function renderQueue() {
+    $('queue').replaceChildren();
+    if (queue.length === 0) {
+      selectSubmission(null);
+      return;
+    }
+    for (const submission of queue) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'item';
+      button.dataset.id = String(submission.id);
+      const name = document.createElement('strong');
+      name.textContent = submission.name || '';
+      const address = document.createElement('span');
+      address.textContent = (categoryNames[submission.category] || '') + ' · ' + (submission.address || '');
+      button.append(name,address);
+      button.addEventListener('click', () => { if (!busy) selectSubmission(submission); });
+      $('queue').append(button);
+    }
+    if (!queue.some(q => q.id === selected?.id)) selected = null;
+    selectSubmission(selected || queue[0]);
+  }
+
+  async function loadQueue() {
+    if (!client || !activeUserId || busy) return;
+    const stamp = epoch, id = activeUserId;
+    $('queueStatus').textContent = 'Получаем заявки…';
+    try {
+      const { data, error } = await client.rpc('daapp_admin_list_submissions');
+      if (error) throw error;
+      if (epoch !== stamp || activeUserId !== id) return;
+      queue = Array.isArray(data) ? data : [];
+      renderQueue();
+      $('queueStatus').textContent = queue.length
+        ? 'Ожидают проверки: ' + queue.length
+        : 'Новых заявок нет.';
+    } catch (error) {
+      if (epoch !== stamp || activeUserId !== id) return;
+      console.warn('DAapp moderation list error', error?.code || 'network');
+      $('queueStatus').textContent = 'Не удалось загрузить очередь. Проверьте SQL 006 и права администратора.';
+    }
+  }
+
+  async function showSession(session) {
+    const user = session?.user || null;
+    const id = user?.id || null;
+    if (activeUserId === id) return;
+    activeUserId = id;
+    const stamp = ++epoch;
+    queue = [];
+    selected = null;
+    $('queue').replaceChildren();
+    $('details').hidden = true;
+    if (!user) {
+      showState('login');
+      $('loginStatus').textContent = 'Введите e-mail для входа.';
+      return;
+    }
+    $('selfId').textContent = user.id;
+    $('adminEmail').textContent = user.email || '';
+    showState('access');
+    $('accessMessage').textContent = 'Проверяем права администратора…';
+    try {
+      const { data, error } = await client.from('daapp_admins')
+        .select('user_id').eq('user_id',user.id).maybeSingle();
+      if (epoch !== stamp || activeUserId !== id) return;
+      if (error) throw error;
+      if (!data) {
+        $('accessMessage').textContent = 'Этому аккаунту ещё не выданы права администратора.';
+        return;
+      }
+      showState('admin');
+      void loadQueue();
+    } catch (error) {
+      if (epoch !== stamp || activeUserId !== id) return;
+      console.warn('Admin access check error', error?.code || 'network');
+      $('accessMessage').textContent = 'Не удалось проверить администратора. SQL 006 может быть ещё не установлен.';
+    }
+  }
+
+  function setBusy(value) {
+    busy = value;
+    for (const id of ['approveButton','rejectButton','refreshButton'])
+      $(id).disabled = value;
+  }
+
+  async function review(decision) {
+    if (!selected || busy || !activeUserId) return;
+    const original = selected, stamp = epoch, id = activeUserId;
+    let lat = null, lon = null, publicPhone = null;
+    if (decision === 'approved') {
+      if (!$('verifiedCheckbox').checked) {
+        $('reviewStatus').textContent = 'Сначала подтвердите проверку организации.';
+        return;
+      }
+      lat = Number($('verifiedLatitude').value);
+      lon = Number($('verifiedLongitude').value);
+      if (!$('verifiedLatitude').value.trim() || !$('verifiedLongitude').value.trim() ||
+          !Number.isFinite(lat) || !Number.isFinite(lon) ||
+          lat < 44.05 || lat > 44.31 || lon < 66.55 || lon > 66.94) {
+        $('reviewStatus').textContent = 'Введите точные проверенные координаты в пределах Шиели.';
+        return;
+      }
+      publicPhone = $('publicPhone').value.trim() || null;
+      if (publicPhone && !$('phoneConsent').checked) {
+        $('reviewStatus').textContent = 'Для публичного телефона требуется подтверждение согласия.';
+        return;
+      }
+      if (!window.confirm('Опубликовать «' + original.name + '» на карте Шиели?')) return;
+    } else {
+      if (!window.confirm('Отклонить заявку «' + original.name + '»?')) return;
+    }
+
+    setBusy(true);
+    $('reviewStatus').textContent = 'Сохраняем решение…';
+    try {
+      const { error } = await client.rpc('daapp_admin_review_submission',{
+        p_submission_id: original.id,
+        p_decision: decision,
+        p_latitude: lat,
+        p_longitude: lon,
+        p_public_phone: publicPhone
+      });
+      if (error) throw error;
+      if (epoch !== stamp || activeUserId !== id) return;
+      $('reviewStatus').textContent = decision === 'approved'
+        ? 'Организация опубликована на карте.'
+        : 'Заявка отклонена.';
+      queue = queue.filter(q => q.id !== original.id);
+      selected = null;
+      renderQueue();
+      $('queueStatus').textContent = 'Осталось заявок: ' + queue.length;
+    } catch (error) {
+      if (epoch !== stamp || activeUserId !== id) return;
+      console.warn('DAapp moderation action error', error?.code || 'network');
+      $('reviewStatus').textContent = 'Не удалось сохранить решение (' +
+        String(error?.code || 'network').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,40) +
+        '). Обновите очередь перед повтором.';
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  try {
+    const {supabase} = await import('../shared/supabase.js');
+    client = supabase;
+    client.auth.onAuthStateChange((_event,session) =>
+      setTimeout(() => { void showSession(session); },0));
+    const { data,error } = await client.auth.getSession();
+    if (error) throw error;
+    await showSession(data.session);
+    $('loginButton').disabled = false;
+    $('loginForm').addEventListener('submit',async (event)=>{
+      event.preventDefault();
+      $('loginButton').disabled = true;
+      $('loginStatus').textContent = 'Отправляем ссылку…';
+      try {
+        const {error} = await client.auth.signInWithOtp({
+          email: $('email').value.trim(),
+          options: { emailRedirectTo: new URL('./',location.href).href }
+        });
+        if (error) throw error;
+        $('loginStatus').textContent = 'Откройте письмо со ссылкой для входа.';
+      } catch(error) {
+        console.warn('Admin sign-in error',error?.code || 'network');
+        $('loginStatus').textContent = 'Не удалось отправить письмо. Проверьте Email и Redirect URLs.';
+      } finally { $('loginButton').disabled = false; }
+    });
+    $('refreshButton').addEventListener('click',()=>{ void loadQueue(); });
+    $('approveForm').addEventListener('submit',(event)=>{
+      event.preventDefault(); void review('approved');
+    });
+    $('rejectButton').addEventListener('click',()=>{ void review('rejected'); });
+    async function logout() {
+      const {error} = await client.auth.signOut();
+      if (error) throw error;
+      activeUserId = undefined;
+      await showSession(null);
+    }
+    for(const id of ['logoutButton','accessLogout']) {
+      $(id).addEventListener('click',()=>{
+        void logout().catch(error=>{
+          console.warn('Admin logout error',error?.code || 'network');
+          $('queueStatus').textContent = 'Не удалось выйти. Повторите попытку.';
+        });
+      });
+    }
+  } catch(error) {
+    console.warn('Admin startup failed',error?.code || 'network');
+    $('loginButton').disabled = true;
+    $('loginStatus').textContent = 'Приложение не подключилось к Supabase. Проверьте интернет.';
+  }
+</script>
+</body>
+</html>
