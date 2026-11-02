@@ -37,7 +37,7 @@
       <section class="categories-panel" aria-label="Категории организаций">
         <div class="panel-top">
           <h2>Что рядом?</h2>
-          <small>Каталог подключим следующим этапом</small>
+          <small id="placesCount">Загружаем каталог…</small>
         </div>
         <div id="categoryButtons" class="chips" role="group" aria-label="Выбрать категорию">
           <button type="button" class="chip" data-category="all" aria-pressed="true">◉ Все</button>
@@ -47,7 +47,9 @@
           <button type="button" class="chip" data-category="hotel" aria-pressed="false">⌂ Гостиницы</button>
           <button type="button" class="chip" data-category="taxi" aria-pressed="false">🚕 Такси</button>
         </div>
-        <p id="categoryEmpty" class="empty-text">Организации появятся здесь, когда мы добавим их адреса на карту.</p>
+        <p id="categoryEmpty" class="empty-text" role="status">Загружаем проверенные организации Шиели…</p>
+        <div id="placesList" class="places-list" aria-label="Организации Шиели" hidden></div>
+        <button id="placesRetry" class="places-retry" type="button" hidden>Обновить каталог</button>
       </section>
     </section>
 
@@ -122,6 +124,9 @@
     locateButton: $('#locateButton'),
     categories: $('#categoryButtons'),
     emptyText: $('#categoryEmpty'),
+    placesList: $('#placesList'),
+    placesRetry: $('#placesRetry'),
+    placesCount: $('#placesCount'),
     coordinateForm: $('#coordinateForm'),
     coordinateInput: $('#coordinateInput'),
     mapLocation: $('#mapLocation')
