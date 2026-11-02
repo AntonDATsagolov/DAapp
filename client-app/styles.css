@@ -66,3 +66,12 @@ button:disabled{opacity:.5;cursor:wait}
  .map-area{min-height:360px}
  .tabbar{height:72px;padding-bottom:0}
 }
+
+/* Public Shieli organization directory: compact, scrollable, mobile-first. */
+.places-list{display:flex;flex-direction:column;gap:6px;padding:5px 16px 0;max-height:168px;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin}
+.place-item{background:#f5f8f6;color:#153f31;border:1px solid #e2ebe5;border-radius:12px;text-align:left;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-height:54px;width:100%}
+.place-item strong{font-size:.83rem;font-weight:760;overflow-wrap:anywhere}
+.place-item span{font-size:.72rem;color:#70847a;overflow-wrap:anywhere;line-height:1.45}
+.place-item:focus-visible{outline:2px solid #116749;outline-offset:2px}
+.places-retry{margin:8px 18px 0;background:#e8f1e9;border:0;border-radius:10px;color:#16684d;font-size:.79rem;font-weight:700;padding:10px 14px;min-height:38px}
+@media(min-width:760px){.places-list{max-height:200px;max-width:920px;margin:0 auto;padding:5px 18px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}}
