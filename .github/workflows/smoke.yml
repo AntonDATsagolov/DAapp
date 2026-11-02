@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '22'
       - name: Test UI scripts, profile logic and security rules
-        run: node --test tests/smoke.test.mjs
+        run: node --test tests/*.test.mjs
       - name: Verify local HTTP routes
         shell: bash
         run: |
