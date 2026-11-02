@@ -41,6 +41,38 @@ test('Shared Supabase and client profile modules have valid JS', () => {
 });
 
 
+test('Map module parses coordinates and rejects invalid positions', () => {
+  const source = read('client-app/map.js')
+    .replace(/^export /gm, '');
+  const parseCoordinates = new Function(source + '\nreturn parseCoordinates;')();
+
+  assert.deepEqual(parseCoordinates('44.8528, 65.5092'), [44.8528, 65.5092]);
+  assert.deepEqual(parseCoordinates('44.8528;65.5092'), [44.8528, 65.5092]);
+  assert.equal(parseCoordinates('91, 65'), null);
+  assert.equal(parseCoordinates('44, 181'), null);
+  assert.equal(parseCoordinates('не координаты'), null);
+  assert.equal(parseCoordinates(''), null);
+  assert.ok(source.includes('tile.openstreetmap.org'));
+  assert.match(source, /OpenStreetMap/);
+  assert.ok(source.includes('navigator.geolocation'));
+});
+
+test('Mobile DAapp map is publicly accessible without login', () => {
+  const html = read('client-app/index.html');
+  const css = read('client-app/styles.css');
+  assert.match(html, /id="villageMap"/);
+  assert.match(html, /id="mapTab"/);
+  assert.match(html, /id="profileTab"/);
+  assert.match(html, /id="categoryButtons"/);
+  assert.ok(html.includes("import('./map.js')"));
+  assert.match(html, /createProfileController/);
+  assert.match(html, /id="loginForm"/);
+  assert.match(css, /height:100dvh/);
+  assert.match(css, /overflow-x:auto/);
+  assert.ok(html.indexOf("import('./map.js')") < html.indexOf("import('../shared/supabase.js')"),
+    'map must start before Supabase login');
+});
+
 test('Profile backfill migration preserves existing rows and client-only default', () => {
   const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
   assert.match(sql, /insert into public\.profiles \(id, role\)/);
@@ -67,6 +99,7 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'shared/supabase.js',
     'client-app/index.html',
     'client-app/profile.js',
+    'client-app/map.js',
     'business-app/index.html',
     'driver-app/index.html'
   ];
