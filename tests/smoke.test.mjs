@@ -85,6 +85,69 @@ test('Mobile DAapp map is publicly accessible without login', () => {
     'map must start before Supabase login');
 });
 
+test('Shieli public places validate records and filter by category', async () => {
+  const source = read('client-app/places.js').replace(/^export /gm, '');
+  const { normalizePlace, filterPlaces, fetchPublishedPlaces } =
+    new Function(source + '\nreturn { normalizePlace, filterPlaces, fetchPublishedPlaces };')();
+
+  const good = {
+    id: 'a', name: '  Проверенная точка  ', category: 'shop',
+    address: 'ул. Примерная, 1', latitude: 44.18, longitude: 66.74
+  };
+  assert.equal(normalizePlace(good).name, 'Проверенная точка');
+  assert.equal(normalizePlace({ ...good, category: 'unknown' }), null);
+  assert.equal(normalizePlace({ ...good, latitude: 1 }), null);
+  assert.equal(normalizePlace({ ...good, longitude: 1 }), null);
+  assert.equal(normalizePlace({ ...good, name: '' }), null);
+  assert.equal(filterPlaces([normalizePlace(good)], 'cafe').length, 0);
+  assert.equal(filterPlaces([normalizePlace(good)], 'shop').length, 1);
+
+  const steps = [];
+  const rows = [good, { ...good, id: 'b', category: 'cafe' }];
+  const fake = {
+    from(table) {
+      assert.equal(table, 'map_places');
+      const chain = {
+        select(fields) {
+          assert.equal(fields, 'id,name,category,address,phone,latitude,longitude');
+          steps.push('select'); return chain;
+        },
+        eq(key, value) {
+          assert.equal(key, 'is_published');
+          assert.equal(value, true); steps.push('published'); return chain;
+        },
+        gte() { steps.push('gte'); return chain; },
+        lte() { steps.push('lte'); return chain; },
+        order(key) { assert.equal(key, 'name'); return chain; },
+        async limit(max) {
+          assert.equal(max, 150); steps.push('limit');
+          return { data: rows, error: null };
+        }
+      };
+      return chain;
+    }
+  };
+  const result = await fetchPublishedPlaces(fake);
+  assert.equal(result.length, 2);
+  assert.ok(steps.includes('published'));
+  assert.equal(steps.filter(x => x === 'gte').length, 2);
+  assert.equal(steps.filter(x => x === 'lte').length, 2);
+  assert.ok(steps.includes('limit'));
+  assert.doesNotMatch(source, /\\.insert\\(|\\.update\\(|\\.delete\\(/);
+});
+
+test('Shieli place migration is admin-write-only with published-row RLS', () => {
+  const sql = read('supabase/migrations/004_shieli_public_map_places.sql');
+  assert.match(sql, /to_regclass\\('public\\.map_places'\\)/);
+  assert.match(sql, /alter table public\\.map_places enable row level security/);
+  assert.match(sql, /for select to anon, authenticated/);
+  assert.match(sql, /using \\(is_published = true\\)/);
+  assert.match(sql, /default false/);
+  assert.match(sql, /revoke all on public\\.map_places from public, anon, authenticated/);
+  assert.match(sql, /grant select \\(/);
+  assert.doesNotMatch(sql, /grant (insert|update|delete)/i);
+});
+
 test('Profile backfill migration preserves existing rows and client-only default', () => {
   const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
   assert.match(sql, /insert into public\.profiles \(id, role\)/);
@@ -112,6 +175,7 @@ test('Public repository sources never contain a Supabase secret key', () => {
     'client-app/index.html',
     'client-app/profile.js',
     'client-app/map.js',
+    'client-app/places.js',
     'business-app/index.html',
     'driver-app/index.html'
   ];
