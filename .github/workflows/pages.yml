@@ -103,6 +103,32 @@ jobs:
             fi
             echo "PASS: $path"
           done
+      - name: Verify deployed registration and admin-only sign-in UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://antondatsagolov.github.io/DAapp"
+          for app in client-app business-app driver-app admin-app; do
+            expected="shouldCreateUser: true"
+            [[ "$app" == admin-app ]] && expected="shouldCreateUser: false"
+            verified=0
+            for attempt in $(seq 1 15); do
+              if curl --fail --silent --show-error --location --max-time 15 \
+                "$base/$app/" -o /tmp/daapp-registration.html &&
+                  grep -Fq "signInWithOtp" /tmp/daapp-registration.html &&
+                  grep -Fq "$expected" /tmp/daapp-registration.html; then
+                verified=1
+                break
+              fi
+              sleep 4
+            done
+            if [[ "$verified" != 1 ]]; then
+              echo "FAIL: registration/login code missing or stale for $app"
+              exit 1
+            fi
+            echo "PASS: $app uses passwordless OTP and explicit signup policy"
+          done
+
       - name: Report Supabase Auth availability (no credentials)
         shell: bash
         run: |
