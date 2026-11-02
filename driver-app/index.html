@@ -61,8 +61,10 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   </div>
 
   <section id="authPanel" class="panel">
-    <h2>Войти или зарегистрироваться</h2>
-    <p class="panel-lead">Вход и регистрация по e-mail без пароля. Новый аккаунт может быть создан автоматически, а вход завершается по ссылке из письма. Можно использовать уже существующий аккаунт DAapp.</p>
+    <h2>Единый аккаунт DAapp</h2>
+    <p class="panel-lead">Водителю не нужен отдельный аккаунт. Войдите под общим логином и паролем DAapp, а затем подайте анкету водителя.</p>
+    <p><a href="../account-app/?next=driver">Войти или зарегистрироваться по номеру и паролю</a></p>
+    <p class="small">Если ранее входили по e-mail, используйте старую ссылку:</p>
     <form id="loginForm">
       <label class="field" for="email">Электронная почта</label>
       <input id="email" type="email" autocomplete="email" placeholder="name@example.com" required>
@@ -301,7 +303,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       try {
         const {error} = await client.auth.signInWithOtp({
           email: $('email').value.trim(),
-          options: {emailRedirectTo: new URL('./',location.href).href, shouldCreateUser: true}
+          options: {emailRedirectTo: new URL('./',location.href).href, shouldCreateUser: false}
         });
         if (error) throw error;
         setMessage('loginMessage', 'Письмо отправлено. Откройте ссылку для входа.');
