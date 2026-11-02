@@ -41,6 +41,13 @@ test('Shared Supabase and client profile modules have valid JS', () => {
 });
 
 
+test('All three DAapp interfaces target Shieli', () => {
+  for (const dir of ['client-app', 'business-app', 'driver-app']) {
+    assert.match(read(dir + '/index.html'), /Шиели/);
+  }
+  assert.match(read('README.md'), /посёлка Шиели/);
+});
+
 test('Map module parses coordinates and rejects invalid positions', () => {
   const source = read('client-app/map.js')
     .replace(/^export /gm, '');
