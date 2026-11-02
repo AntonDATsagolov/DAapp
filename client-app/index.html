@@ -52,6 +52,7 @@
         <button id="saveButton" type="submit">Сохранить профиль</button>
       </form>
       <p id="profileStatus" class="message" role="status" aria-live="polite"></p>
+      <button class="secondary" id="retryProfileButton" type="button" hidden>Повторить проверку профиля</button>
       <button class="secondary" id="logoutButton" type="button">Выйти</button>
     </section>
 
@@ -81,7 +82,8 @@
         phoneNumber: document.querySelector('#phoneNumber'),
         role: document.querySelector('#accountRole'),
         status: document.querySelector('#profileStatus'),
-        saveButton: document.querySelector('#saveButton')
+        saveButton: document.querySelector('#saveButton'),
+        retryButton: document.querySelector('#retryProfileButton')
       });
 
       let displayedUserId = undefined; // Первую пустую сессию тоже нужно обработать.

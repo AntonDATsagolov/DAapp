@@ -8,8 +8,9 @@ const roleNames = {
   business_owner: 'Предприниматель'
 };
 
-export function createProfileController({ form, fullName, phoneNumber, role, status, saveButton }) {
+export function createProfileController({ form, fullName, phoneNumber, role, status, saveButton, retryButton }) {
   let userId = null;
+  let activeUser = null;
   let version = 0; // Не показываем данные предыдущего пользователя после смены аккаунта.
 
   function resetFields() {
@@ -19,28 +20,52 @@ export function createProfileController({ form, fullName, phoneNumber, role, sta
     role.textContent = '';
     status.textContent = '';
     saveButton.disabled = false;
+    if (retryButton) retryButton.hidden = true;
   }
 
   async function show(user) {
     const currentVersion = ++version;
     userId = user?.id ?? null;
+    activeUser = user ?? null;
     resetFields();
     if (!userId) return;
 
     status.textContent = 'Загружаем ваш профиль…';
     try {
       // Выбираем профиль текущего пользователя. База дополнительно проверяет RLS.
-      const { data, error } = await supabase
+      const readOwnProfile = () => supabase
         .from('profiles')
         .select('id, full_name, phone_number, role, driver_vehicle_type')
         .eq('id', userId)
         .maybeSingle();
 
+      let { data, error } = await readOwnProfile();
       if (currentVersion !== version) return;
       if (error) throw error;
+
       if (!data) {
-        status.textContent = 'Профиль не найден. Возможно, аккаунт создан до настройки базы. Администратору нужно проверить миграцию 002_backfill_existing_profiles.sql в Supabase.';
-        return;
+        // User may have registered before the profiles trigger existed.
+        // A trusted RPC creates ONLY the current user's missing row as 'client'.
+        status.textContent = 'Профиль не найден. Пробуем восстановить…';
+        const result = await supabase.rpc('daapp_ensure_own_profile');
+        if (currentVersion !== version) return;
+
+        if (result.error) {
+          console.warn('Восстановление профиля недоступно:', result.error.code || 'rpc_error');
+          status.textContent = 'Автоматическое восстановление ещё не настроено. Администратору нужно выполнить SQL 003_ensure_own_profile.sql в Supabase.';
+          if (retryButton) retryButton.hidden = false;
+          return;
+        }
+
+        ({ data, error } = await readOwnProfile());
+        if (currentVersion !== version) return;
+        if (error) throw error;
+
+        if (!data) {
+          status.textContent = 'Профиль создан или уже существует, но не виден. Проверьте SELECT и RLS для profiles (auth.uid() = id).';
+          if (retryButton) retryButton.hidden = false;
+          return;
+        }
       }
 
       fullName.value = data.full_name ?? '';
@@ -51,8 +76,15 @@ export function createProfileController({ form, fullName, phoneNumber, role, sta
     } catch (error) {
       if (currentVersion !== version) return;
       console.error('Ошибка чтения profiles:', error);
-      status.textContent = 'Не удалось загрузить профиль. Проверьте таблицу profiles и её RLS-политики.';
+      status.textContent = 'Не удалось прочитать профиль. Проверьте интернет, структуру таблицы profiles и права SELECT/RLS.';
+      if (retryButton) retryButton.hidden = false;
     }
+  }
+
+  if (retryButton) {
+    retryButton.addEventListener('click', () => {
+      if (activeUser) void show(activeUser);
+    });
   }
 
   form.addEventListener('submit', async (event) => {
@@ -99,6 +131,7 @@ export function createProfileController({ form, fullName, phoneNumber, role, sta
     clear() {
       ++version;
       userId = null;
+      activeUser = null;
       resetFields();
     }
   };
