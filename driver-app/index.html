@@ -1,34 +1,334 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
-  <title>DAapp — Шиели · Для водителей</title>
-  <style>
-    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f6f7f9;color:#18212b}main{max-width:480px;margin:auto;min-height:100dvh;padding:32px 20px}h1{font-size:1.8rem;margin:12px 0}p{line-height:1.5;color:#52606d}.status{margin-top:24px;padding:14px;background:#fff;border-radius:12px;font-size:.9rem}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124c3b">
+<meta name="description" content="DAapp Водитель — анкета, смена и заказы в Шиели">
+<title>DAapp — Шиели · Для водителей</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1c362d;background:#f3f7f4;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.52;cursor:wait}[hidden]{display:none!important}
+a{color:#146049;text-decoration:none}.wrap{max-width:740px;margin:auto;min-height:100dvh;padding:0 16px 90px}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:#fff;margin:0 -16px;padding:17px 18px;border-bottom:1px solid #e4ebe7;gap:12px}
+.logo{font-size:1.7rem;font-weight:850;letter-spacing:-.07em;color:#165940}.topbar-right{text-align:right;font-size:.8rem;font-weight:750;color:#305c4c}.topbar-right small{display:block;font-size:.72rem;font-weight:500;color:#7c9084}
+.hero{padding:30px 0 15px}.eyebrow{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:850;color:#187951}.hero h1{font-size:2rem;line-height:1.12;letter-spacing:-.05em;margin:10px 0 12px}.hero p{max-width:490px;color:#60756b;line-height:1.55;font-size:.91rem;margin:0}
+.hero-status{display:inline-flex;align-items:center;gap:7px;margin-top:19px;border-radius:999px;background:#e6f0e8;padding:9px 12px;color:#315e46;font-size:.78rem;font-weight:800}
+.dot{width:9px;height:9px;border-radius:50%;background:#9cab9f}.hero-status[data-state="online"]{background:#dff2e5;color:#116139}.hero-status[data-state="online"] .dot{background:#20a264}
+.cards{display:grid;gap:12px;margin-top:10px}.service{background:#fff;border:1px solid #e5ede8;padding:18px;border-radius:18px;display:flex;gap:13px;align-items:flex-start}
+.service-icon{font-size:1.35rem;min-width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#e6f1e9}
+.service h3{font-size:1rem;margin:0 0 6px}.service p{margin:0;font-size:.79rem;line-height:1.5;color:#79887f}
+.panel{background:#fff;border:1px solid #e2ebe5;border-radius:19px;padding:21px;margin-top:17px;box-shadow:0 7px 30px #163d2509}
+.panel h2{font-size:1.15rem;margin:0 0 9px;letter-spacing:-.025em}.panel p{line-height:1.58;color:#687d71;font-size:.86rem}
+.panel-lead{margin:0 0 15px}.account-label{color:#789083;font-size:.75rem;overflow-wrap:anywhere}
+label.field{display:block;margin:16px 0 7px;font-size:.81rem;font-weight:760}
+input,select{width:100%;border:1px solid #cad9d0;background:white;color:#203c2e;border-radius:11px;padding:11px 12px;min-height:47px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid #87c3a1;outline-offset:2px}
+.btn{min-height:46px;border:0;border-radius:12px;font-weight:770;padding:12px 16px;background:#166548;color:white}
+.btn.full{display:block;width:100%;margin-top:18px}.btn.alt{background:#e9f2ec;color:#225e43}.btn:disabled{opacity:.5}
+.message{color:#355c48!important;font-size:.83rem!important;min-height:19px;overflow-wrap:anywhere}
+.small{font-size:.76rem!important;color:#7a8b80!important}.warning{background:#f0f5f0;padding:12px 14px;border-radius:11px;font-size:.82rem!important;color:#4a6953!important}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:12px 0;padding-bottom:12px;border-bottom:1px solid #e7eeea;font-size:.83rem}.row strong{font-size:.82rem;text-align:right;overflow-wrap:anywhere}.row:last-child{border-bottom:0}
+.line-banner{padding:17px;border-radius:16px;background:#eef3ef;border:1px solid #dfe9e2;margin:16px 0}.line-banner h3{font-size:1.15rem;margin:0 0 4px}.line-banner p{margin:0}.line-banner[data-online="true"]{background:#e3f4e8;border-color:#c7ead3}
+.line-actions{display:flex;gap:8px;flex-wrap:wrap}.line-actions .btn{flex:1;min-width:140px}
+.orders-placeholder{border:1px dashed #cedbd1;background:#f7faf7;padding:19px;border-radius:15px;margin-top:13px}.orders-placeholder strong{display:block;font-size:.86rem}.orders-placeholder p{margin:6px 0 0}
+.footer{display:flex;justify-content:center;gap:16px;font-size:.79rem;margin-top:25px;padding-top:22px;border-top:1px solid #dfebe2}
+@media(min-width:650px){.wrap{padding:0 25px 90px}.topbar{margin:0 -25px;padding:20px 25px}.hero h1{font-size:2.5rem}.cards{grid-template-columns:1fr 1fr}.panel{padding:25px}}
+</style>
 </head>
 <body>
-  <main>
-    <h1>DAapp</h1>
-    <p>Шиели · Для водителей</p>
-    <p>Смена и доступные заказы</p>
-    <div id="status" class="status" role="status">Инициализация Supabase…</div>
-  </main>
-  <script type="module">
-    // Общий клиент импортируется из корня монорепозитория.
-    const status = document.querySelector('#status');
-    try {
-      const { supabase } = await import('../shared/supabase.js');
-      // Читаем состояние авторизации — не запрашиваем данные без RLS.
-      const { error } = await supabase.auth.getSession();
-      if (error) throw error;
-      status.textContent = 'Клиент Supabase инициализирован. Функции будут добавлены поэтапно.';
-    } catch (error) {
-      console.error('Ошибка запуска DAapp', error);
-      status.textContent = 'Не удалось проверить подключение. Проверьте интернет и настройки Supabase.';
+<main class="wrap">
+  <header class="topbar">
+    <a class="logo" href="../client-app/" aria-label="DAapp, главная">DAapp.</a>
+    <span class="topbar-right">Шиели · Шиелі<small>Кызылординская область</small></span>
+  </header>
+  <section class="hero">
+    <span class="eyebrow">DAapp · Для водителей</span>
+    <h1>Работай в своём посёлке</h1>
+    <p>Подай анкету водителя, следи за её проверкой и управляй выходом на линию. Всё в одном кабинете.</p>
+    <div id="heroStatus" class="hero-status" data-state="offline">
+      <span class="dot" aria-hidden="true"></span><span id="heroStatusText">Не на линии</span>
+    </div>
+  </section>
+
+  <div class="cards" aria-label="Направления работы">
+    <div class="service"><span class="service-icon" aria-hidden="true">🚕</span><div>
+      <h3>Такси по Шиели</h3><p>Поездки по посёлку. Приём реальных заказов подключим следующим этапом.</p>
+    </div></div>
+    <div class="service"><span class="service-icon" aria-hidden="true">📦</span><div>
+      <h3>Доставка и грузы</h3><p>Перевозки и доставка. Заказы пока не подключены, заявки не имитируются.</p>
+    </div></div>
+  </div>
+
+  <section id="authPanel" class="panel">
+    <h2>Войти в кабинет водителя</h2>
+    <p class="panel-lead">Вход по e-mail через Supabase. Пароль не нужен. Можно использовать свой аккаунт DAapp.</p>
+    <form id="loginForm">
+      <label class="field" for="email">Электронная почта</label>
+      <input id="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+      <button id="loginButton" class="btn full" type="submit" disabled>Получить ссылку для входа</button>
+    </form>
+    <p id="loginMessage" class="message" role="status" aria-live="polite">Проверяем авторизацию…</p>
+  </section>
+
+  <section id="appPanel" hidden>
+    <div class="panel">
+      <h2>Мой кабинет</h2>
+      <div class="row"><span>Аккаунт</span><strong id="accountEmail"></strong></div>
+      <div class="row"><span>Анкета</span><strong id="driverReviewLabel">Загружаем…</strong></div>
+      <p id="driverMessage" class="message" role="status" aria-live="polite">Получаем данные водителя…</p>
+      <button id="reloadDriver" class="btn alt" type="button">Обновить анкету</button>
+      <button id="logoutButton" class="btn alt" type="button">Выйти</button>
+    </div>
+
+    <section id="registrationPanel" class="panel" hidden>
+      <h2>Заявка водителя</h2>
+      <p class="panel-lead">Укажи настоящие данные. Администратор проверит заявку перед допуском на линию. До подтверждения поездки недоступны.</p>
+      <form id="driverForm">
+        <label class="field" for="fullName">Имя и фамилия</label>
+        <input id="fullName" name="full_name" type="text" autocomplete="name" maxlength="80" minlength="2" placeholder="Имя и фамилия" required>
+        <label class="field" for="contactPhone">Контактный телефон</label>
+        <input id="contactPhone" name="contact_phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="40" minlength="6" placeholder="+7 7XX XXX XX XX" required>
+        <label class="field" for="vehicleType">Тип автомобиля</label>
+        <select id="vehicleType" name="vehicle_type" required>
+          <option value="">Выбери тип транспорта</option>
+          <option value="passenger">Легковой автомобиль</option>
+          <option value="minivan">Минивэн</option>
+          <option value="cargo">Грузовой автомобиль</option>
+        </select>
+        <label class="field" for="vehicleModel">Марка и модель</label>
+        <input id="vehicleModel" name="vehicle_model" type="text" maxlength="80" minlength="2" placeholder="Например, Toyota Camry" required>
+        <label class="field" for="vehiclePlate">Государственный номер</label>
+        <input id="vehiclePlate" name="vehicle_plate" type="text" maxlength="24" minlength="3" placeholder="Номер автомобиля" required>
+        <p class="small">Данные анкеты не показываются жителям. Их может проверить только администрация.</p>
+        <button id="registerButton" class="btn full" type="submit">Отправить на проверку</button>
+        <p id="registerMessage" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="reviewPanel" class="panel" hidden>
+      <h2>Моя анкета</h2>
+      <div class="row"><span>ФИО</span><strong id="recordName"></strong></div>
+      <div class="row"><span>Автомобиль</span><strong id="recordVehicle"></strong></div>
+      <div class="row"><span>Госномер</span><strong id="recordPlate"></strong></div>
+      <div class="row"><span>Телефон</span><strong id="recordPhone"></strong></div>
+      <p id="reviewExplanation" class="warning"></p>
+    </section>
+
+    <section id="linePanel" class="panel" hidden>
+      <h2>Моя линия</h2>
+      <div id="lineBanner" class="line-banner" data-online="false">
+        <h3 id="lineTitle">Не на линии</h3>
+        <p id="lineDescription">Вы сейчас недоступны для новых поездок.</p>
+      </div>
+      <div class="line-actions">
+        <button id="goOnline" class="btn" type="button">Выйти на линию</button>
+        <button id="goOffline" class="btn alt" type="button" hidden>Завершить смену</button>
+      </div>
+      <p id="lineMessage" class="message" role="status" aria-live="polite"></p>
+    </section>
+  </section>
+
+  <section class="panel" aria-label="Заказы">
+    <h2>Заказы</h2>
+    <p class="panel-lead">Это раздел будущих заказов для водителей Шиели.</p>
+    <div class="orders-placeholder">
+      <strong>Заказы пока не подключены</strong>
+      <p>Мы ещё разрабатываем создание заявок пассажирами и передачу водителям. Сейчас реальных заказов в приложении нет — фальшивые поездки не отображаются.</p>
+    </div>
+  </section>
+  <footer class="footer"><a href="../client-app/">Карта Шиели</a><a href="../business-app/">Для предпринимателей</a><a href="../diagnostics/">Диагностика</a></footer>
+</main>
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  let client, driverApi, userId = undefined, revision = 0, currentDriver = null, changingLine = false;
+  const setMessage = (id, value) => { $(id).textContent = value; };
+
+  function updateLineState(record) {
+    const online = Boolean(record?.review_status === 'approved' && record?.is_online);
+    $('lineBanner').dataset.online = String(online);
+    $('lineTitle').textContent = online ? 'Вы на линии' : 'Не на линии';
+    $('lineDescription').textContent = online
+      ? 'Ваш статус сохранён. Приём заказов такси пока не подключён.'
+      : 'Вы не отмечены доступным водителем.';
+    $('goOnline').hidden = online;
+    $('goOffline').hidden = !online;
+    $('heroStatus').dataset.state = online ? 'online' : 'offline';
+    $('heroStatusText').textContent = online ? 'На линии · заказы не подключены' : 'Не на линии';
+  }
+
+  function renderDriver(record) {
+    currentDriver = record;
+    $('registrationPanel').hidden = Boolean(record);
+    $('reviewPanel').hidden = !record;
+    const status = record?.review_status || null;
+    $('driverReviewLabel').textContent = status
+      ? (driverApi.REVIEW_LABELS[status] || 'Статус неизвестен')
+      : 'Анкета не подана';
+    $('linePanel').hidden = status !== 'approved';
+    if (!record) {
+      updateLineState(null);
+      setMessage('driverMessage', 'Анкеты пока нет. Заполни заявку ниже.');
+      return;
     }
-  </script>
+    $('recordName').textContent = record.full_name || '';
+    $('recordVehicle').textContent = (driverApi.VEHICLE_TYPES[record.vehicle_type] || 'Автомобиль') +
+      ' · ' + (record.vehicle_model || '');
+    $('recordPlate').textContent = record.vehicle_plate || '';
+    $('recordPhone').textContent = record.contact_phone || '';
+    const explanation = status === 'pending'
+      ? 'Анкета отправлена и ожидает проверки администратором DAapp. Выход на линию пока закрыт.'
+      : status === 'rejected'
+        ? 'Анкета отклонена. Для уточнения причин свяжитесь с администрацией DAapp.'
+        : status === 'approved'
+          ? 'Анкета подтверждена. Вы можете переключать статус линии. Заказы пассажиров появятся после подключения сервиса.'
+          : 'Неизвестное состояние анкеты. Обратитесь к администрации.';
+    $('reviewExplanation').textContent = explanation;
+    setMessage('driverMessage', status === 'approved'
+      ? 'Ваш доступ водителя подтверждён.'
+      : 'Заявка: ' + ($('driverReviewLabel').textContent || 'ожидание'));
+    updateLineState(record);
+  }
+
+  async function loadDriver() {
+    if (!client || !driverApi || !userId) return;
+    const version = revision, uid = userId;
+    setMessage('driverMessage', 'Получаем данные водителя…');
+    try {
+      const data = await driverApi.fetchDriverRegistration(client);
+      if (version !== revision || uid !== userId) return;
+      renderDriver(data);
+    } catch (error) {
+      if (version !== revision || uid !== userId) return;
+      console.warn('DAapp driver load error', error?.code || 'network_error');
+      $('registrationPanel').hidden = true;
+      $('reviewPanel').hidden = true;
+      $('linePanel').hidden = true;
+      setMessage('driverMessage', driverApi.publicDriverError(error));
+    }
+  }
+
+  function showSession(session) {
+    const user = session?.user || null;
+    const nextId = user?.id || null;
+    if (userId === nextId) return;
+    userId = nextId;
+    revision++;
+    currentDriver = null;
+    $('authPanel').hidden = Boolean(user);
+    $('appPanel').hidden = !user;
+    $('accountEmail').textContent = user?.email || '';
+    updateLineState(null);
+    if (user) void loadDriver();
+    else {
+      $('driverForm').reset();
+      setMessage('loginMessage', 'Введите e-mail, чтобы войти.');
+    }
+  }
+
+  $('driverForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!userId || $('registerButton').disabled) return;
+    const version = revision, uid = userId;
+    $('registerButton').disabled = true;
+    setMessage('registerMessage', 'Отправляем анкету…');
+    try {
+      const values = Object.fromEntries(new FormData($('driverForm')).entries());
+      const result = await driverApi.submitDriverRegistration(client, values);
+      if (version !== revision || uid !== userId) return;
+      if (result.error) setMessage('registerMessage', result.error);
+      else {
+        setMessage('registerMessage', 'Анкета отправлена! Ожидайте проверки администратора.');
+        await loadDriver();
+      }
+    } catch (error) {
+      if (version === revision && uid === userId)
+        setMessage('registerMessage', 'Ошибка сети. Попробуйте ещё раз.');
+    } finally {
+      $('registerButton').disabled = false;
+    }
+  });
+
+  async function changeLine(online) {
+    if (!currentDriver || currentDriver.review_status !== 'approved' ||
+        !userId || changingLine) return;
+    const version = revision, uid = userId;
+    changingLine = true;
+    $('goOnline').disabled = true;
+    $('goOffline').disabled = true;
+    setMessage('lineMessage', online ? 'Выходим на линию…' : 'Завершаем смену…');
+    try {
+      const result = await driverApi.setDriverAvailability(client, online);
+      if (revision !== version || userId !== uid) return;
+      if (result.error) setMessage('lineMessage', result.error);
+      else {
+        currentDriver = { ...currentDriver, is_online: result.is_online };
+        updateLineState(currentDriver);
+        setMessage('lineMessage', online
+          ? 'Статус «На линии» сохранён. Реальные заказы пока не подключены.'
+          : 'Смена завершена. Статус сохранён.');
+      }
+    } catch (error) {
+      if (revision === version && userId === uid)
+        setMessage('lineMessage', 'Не удалось обновить линию. Проверьте сеть.');
+    } finally {
+      changingLine = false;
+      $('goOnline').disabled = false;
+      $('goOffline').disabled = false;
+    }
+  }
+  $('goOnline').addEventListener('click', () => { void changeLine(true); });
+  $('goOffline').addEventListener('click', () => { void changeLine(false); });
+  $('reloadDriver').addEventListener('click', () => { void loadDriver(); });
+
+  try {
+    const [{supabase}, api] = await Promise.all([
+      import('../shared/supabase.js'), import('./driver.js')
+    ]);
+    client = supabase;
+    driverApi = api;
+    client.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => showSession(session), 0);
+    });
+    const {data,error} = await client.auth.getSession();
+    if (error) throw error;
+    showSession(data.session);
+    $('loginButton').disabled = false;
+    $('loginForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('loginButton').disabled = true;
+      setMessage('loginMessage', 'Отправляем письмо…');
+      try {
+        const {error} = await client.auth.signInWithOtp({
+          email: $('email').value.trim(),
+          options: {emailRedirectTo: new URL('./',location.href).href}
+        });
+        if (error) throw error;
+        setMessage('loginMessage', 'Письмо отправлено. Откройте ссылку для входа.');
+      } catch (error) {
+        console.warn('DAapp driver sign-in error', error?.code || 'network_error');
+        setMessage('loginMessage', 'Не удалось отправить ссылку. Проверьте Supabase Email и Redirect URLs.');
+      } finally {
+        $('loginButton').disabled = false;
+      }
+    });
+    $('logoutButton').addEventListener('click', async () => {
+      $('logoutButton').disabled = true;
+      try {
+        const {error} = await client.auth.signOut();
+        if (error) throw error;
+        showSession(null);
+      } catch (error) {
+        setMessage('driverMessage', 'Не удалось выйти из аккаунта. Повторите попытку.');
+      } finally {
+        $('logoutButton').disabled = false;
+      }
+    });
+  } catch (error) {
+    console.warn('DAapp driver startup error', error?.code || 'network_error');
+    $('loginButton').disabled = true;
+    setMessage('loginMessage', 'Не удалось подключить вход. Проверьте интернет или страницу диагностики.');
+  }
+</script>
 </body>
 </html>

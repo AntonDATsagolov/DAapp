@@ -44,6 +44,14 @@ input:focus-visible,button:focus-visible{outline:2px solid #73b28c;outline-offse
 small{color:#74877a;font-size:.75rem}
 .mono{font:700 .78rem ui-monospace,monospace;word-break:break-all}
 footer{margin-top:28px;text-align:center;font-size:.79rem}
+.driver-queue{display:grid;gap:12px;margin-top:13px}
+.driver-application{background:#f7faf8;border:1px solid #dfeae0;border-radius:13px;padding:14px}
+.driver-application strong{display:block;margin-bottom:7px;font-size:.9rem}
+.driver-application span{display:block;font-size:.78rem;line-height:1.55;color:#576e5f;overflow-wrap:anywhere}
+.driver-application label{display:flex;align-items:flex-start;gap:9px;line-height:1.5;font-size:.78rem}
+.driver-application label input{width:18px;min-width:18px;height:18px;min-height:18px;margin:2px 0 0}
+.driver-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.driver-actions .btn{flex:1;min-width:125px}
 .check-results{display:grid;gap:8px;margin-top:12px}
 .check-row{border:1px solid #e2eae5;border-radius:11px;padding:10px 12px;background:#f7faf8}
 .check-row[data-ok="false"]{border-color:#ead0cf;background:#fff7f7}
@@ -137,13 +145,20 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
         </div>
       </section>
     </div>
+    <section class="card" aria-label="Проверка водителей">
+      <h2>Заявки водителей Шиели</h2>
+      <p>Проверяйте личность, водительское удостоверение, автомобиль и право на перевозки до допуска к линии. Подача заявки не даёт права принимать заказы.</p>
+      <button id="refreshDrivers" class="btn alt" type="button">Обновить заявки водителей</button>
+      <p id="driverQueueStatus" class="status" role="status" aria-live="polite">Проверяем заявки водителей…</p>
+      <div id="driverQueue" class="driver-queue"></div>
+    </section>
   </section>
   <footer><a href="../client-app/">Карта Шиели</a> · <a href="../business-app/">Приложение предпринимателя</a></footer>
 </main>
 <script type="module">
   const $ = (id) => document.getElementById(id);
   const loginPanel = $('loginPanel'), accessPanel = $('accessPanel'), adminPanel = $('adminPanel');
-  let client, readChecks, activeUserId, epoch = 0, selected = null, queue = [], busy = false;
+  let client, readChecks, activeUserId, epoch = 0, selected = null, queue = [], busy = false, driverBusy = false;
   const categoryNames = { shop:'Магазин', cafe:'Кафе', beauty:'Красота', hotel:'Гостиница', taxi:'Такси' };
 
   function showState(state) {
@@ -214,6 +229,98 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
     }
   }
 
+  async function loadDriverQueue() {
+    if (!client || !activeUserId || driverBusy) return;
+    const stamp = epoch, uid = activeUserId;
+    $('refreshDrivers').disabled = true;
+    $('driverQueueStatus').textContent = 'Загружаем заявки водителей…';
+    try {
+      const {data,error} = await client.rpc('daapp_admin_list_drivers');
+      if (error) throw error;
+      if (stamp !== epoch || uid !== activeUserId) return;
+      $('driverQueue').replaceChildren();
+      const list = Array.isArray(data) ? data : [];
+      $('driverQueueStatus').textContent = list.length
+        ? 'Ожидают проверки: ' + list.length
+        : 'Заявок водителей пока нет.';
+      const typeNames = {passenger:'Легковой',minivan:'Минивэн',cargo:'Грузовой'};
+      for (const driver of list) {
+        const card = document.createElement('div');
+        card.className = 'driver-application';
+        const name = document.createElement('strong');
+        name.textContent = driver.full_name || 'Без имени';
+        const details = document.createElement('span');
+        details.textContent = (typeNames[driver.vehicle_type] || 'Автомобиль') +
+          ' · ' + (driver.vehicle_model || '') + ' · ' + (driver.vehicle_plate || '');
+        const phone = document.createElement('span');
+        phone.textContent = 'Контакт: ' + (driver.contact_phone || '');
+        const checkLabel = document.createElement('label');
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        const checkText = document.createElement('span');
+        checkText.textContent = 'Я проверил личность, документы и право водителя выполнять перевозки.';
+        checkLabel.append(check, checkText);
+        const actions = document.createElement('div');
+        actions.className = 'driver-actions';
+        const approve = document.createElement('button');
+        approve.className = 'btn';
+        approve.type = 'button';
+        approve.textContent = 'Одобрить';
+        const reject = document.createElement('button');
+        reject.className = 'btn danger';
+        reject.type = 'button';
+        reject.textContent = 'Отклонить';
+        for (const [button,decision] of [[approve,'approved'],[reject,'rejected']]) {
+          button.addEventListener('click', async () => {
+            if (driverBusy || !activeUserId) return;
+            if (decision === 'approved' && !check.checked) {
+              $('driverQueueStatus').textContent = 'Подтвердите проверку документов перед одобрением.';
+              return;
+            }
+            if (!window.confirm((decision === 'approved' ? 'Допустить водителя' : 'Отклонить заявку водителя') +
+              ' «' + driver.full_name + '»?')) return;
+            driverBusy = true;
+            approve.disabled = true;
+            reject.disabled = true;
+            const version = epoch, currentId = activeUserId;
+            $('driverQueueStatus').textContent = 'Сохраняем решение…';
+            try {
+              const {error:reviewError} = await client.rpc('daapp_admin_review_driver',{
+                p_driver_id: driver.user_id, p_decision: decision
+              });
+              if (reviewError) throw reviewError;
+              if (version !== epoch || currentId !== activeUserId) return;
+              card.remove();
+              $('driverQueueStatus').textContent = decision === 'approved'
+                ? 'Водитель одобрен. Выход на линию теперь доступен после обновления его кабинета.'
+                : 'Заявка водителя отклонена.';
+            } catch (reviewError) {
+              if (version === epoch && currentId === activeUserId) {
+                console.warn('DAapp driver moderation error', reviewError?.code || 'network');
+                $('driverQueueStatus').textContent = 'Ошибка решения (' +
+                  String(reviewError?.code || 'network').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,32) +
+                  '). Обновите очередь.';
+              }
+            } finally {
+              driverBusy = false;
+              approve.disabled = false;
+              reject.disabled = false;
+            }
+          });
+        }
+        actions.append(approve,reject);
+        card.append(name,details,phone,checkLabel,actions);
+        $('driverQueue').append(card);
+      }
+    } catch (error) {
+      if (stamp !== epoch || uid !== activeUserId) return;
+      console.warn('DAapp driver queue unavailable',error?.code || 'network');
+      $('driverQueueStatus').textContent = 'Заявки водителей недоступны. Проверьте миграцию SQL 007.';
+    } finally {
+      if (stamp === epoch && uid === activeUserId) $('refreshDrivers').disabled = false;
+    }
+  }
+
   async function showSession(session) {
     const user = session?.user || null;
     const id = user?.id || null;
@@ -223,6 +330,8 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
     queue = [];
     selected = null;
     $('queue').replaceChildren();
+    $('driverQueue').replaceChildren();
+    $('driverQueueStatus').textContent = 'Заявки водителей ещё не загружены.';
     $('systemCheckResults').replaceChildren();
     $('systemCheckStatus').textContent = 'Проверка ещё не выполнялась.';
     $('details').hidden = true;
@@ -246,6 +355,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       }
       showState('admin');
       void loadQueue();
+      void loadDriverQueue();
     } catch (error) {
       if (epoch !== stamp || activeUserId !== id) return;
       console.warn('Admin access check error', error?.code || 'network');
@@ -380,6 +490,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       } finally { $('loginButton').disabled = false; }
     });
     $('refreshButton').addEventListener('click',()=>{ void loadQueue(); });
+    $('refreshDrivers').addEventListener('click',()=>{ void loadDriverQueue(); });
     $('systemCheckButton').addEventListener('click',()=>{ void runSystemCheck(); });
     $('approveForm').addEventListener('submit',(event)=>{
       event.preventDefault(); void review('approved');
