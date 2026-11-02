@@ -4,30 +4,106 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
-  <title>DAapp — Для жителей и гостей</title>
+  <title>DAapp — Вход для жителей</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f6f7f9;color:#18212b}main{max-width:480px;margin:auto;min-height:100dvh;padding:32px 20px}h1{font-size:1.8rem;margin:12px 0}p{line-height:1.5;color:#52606d}.status{margin-top:24px;padding:14px;background:#fff;border-radius:12px;font-size:.9rem}
+    :root{font-family:system-ui,-apple-system,sans-serif;color:#17212f;background:#f4f6f8}
+    *{box-sizing:border-box}body{margin:0}main{max-width:440px;min-height:100dvh;margin:auto;padding:36px 20px}
+    h1{font-size:2rem;margin:0 0 8px}h2{font-size:1.2rem}p{color:#526171;line-height:1.5}
+    .panel{margin-top:28px;padding:22px;background:#fff;border-radius:18px;box-shadow:0 4px 18px #1a29300d}
+    label{display:block;font-weight:600;margin-bottom:8px}input,button{width:100%;min-height:48px;border-radius:12px;font:inherit}
+    input{border:1px solid #b9c4ce;padding:12px}button{border:0;background:#126b52;color:white;font-weight:700;margin-top:16px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:wait}.secondary{background:#e8efed;color:#174538}
+    .message{margin-top:20px;line-height:1.5;overflow-wrap:anywhere}
+    [hidden]{display:none!important}
   </style>
 </head>
 <body>
   <main>
     <h1>DAapp</h1>
-    <p>Для жителей и гостей</p>
-    <p>Карта, услуги и заказы</p>
-    <div id="status" class="status" role="status">Инициализация Supabase…</div>
+    <p>Цифровой поселок — всё необходимое рядом.</p>
+
+    <section class="panel" id="login">
+      <h2>Войти по электронной почте</h2>
+      <p>Отправим ссылку для входа. Пароль не нужен.</p>
+      <form id="loginForm">
+        <label for="email">Электронная почта</label>
+        <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+        <button id="sendButton" type="submit">Отправить ссылку</button>
+      </form>
+    </section>
+
+    <section class="panel" id="account" hidden>
+      <h2>Вы вошли в DAapp</h2>
+      <p id="accountEmail"></p>
+      <p>Карта и местные сервисы появятся на следующих этапах.</p>
+      <button class="secondary" id="logoutButton" type="button">Выйти</button>
+    </section>
+
+    <p id="message" class="message" role="status" aria-live="polite">Проверяем авторизацию…</p>
   </main>
+
   <script type="module">
-    // Общий клиент импортируется из корня монорепозитория.
-    const status = document.querySelector('#status');
+    // Файл shared/supabase.js создаёт единственный общий браузерный клиент.
+    const form = document.querySelector('#loginForm');
+    const message = document.querySelector('#message');
+    const sendButton = document.querySelector('#sendButton');
+    const login = document.querySelector('#login');
+    const account = document.querySelector('#account');
+    const accountEmail = document.querySelector('#accountEmail');
+    const logoutButton = document.querySelector('#logoutButton');
+
+    function displaySession(session) {
+      const user = session?.user;
+      login.hidden = Boolean(user);
+      account.hidden = !user;
+      accountEmail.textContent = user?.email ?? '';
+      if (user) message.textContent = 'Авторизация выполнена.';
+    }
+
     try {
       const { supabase } = await import('../shared/supabase.js');
-      // Читаем состояние авторизации — не запрашиваем данные без RLS.
-      const { error } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
-      status.textContent = 'Клиент Supabase инициализирован. Функции будут добавлены поэтапно.';
+      displaySession(data.session);
+      if (!data.session) message.textContent = 'Введите e-mail для входа.';
+
+      // Реагируем на вход по ссылке и выход без перезагрузки страницы.
+      supabase.auth.onAuthStateChange((_event, session) => {
+        displaySession(session);
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        sendButton.disabled = true;
+        message.textContent = 'Отправляем письмо…';
+        try {
+          const email = document.querySelector('#email').value.trim();
+          const { error: otpError } = await supabase.auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: new URL('./', location.href).href }
+          });
+          if (otpError) throw otpError;
+          message.textContent = 'Если адрес доступен для входа, проверьте почту и откройте ссылку на этом устройстве.';
+        } catch (error) {
+          console.error('Ошибка входа', error);
+          message.textContent = 'Не удалось отправить ссылку. Проверьте подключение и настройки Supabase Auth.';
+        } finally {
+          sendButton.disabled = false;
+        }
+      });
+
+      logoutButton.addEventListener('click', async () => {
+        const { error: logoutError } = await supabase.auth.signOut();
+        if (logoutError) {
+          message.textContent = 'Не удалось выйти. Повторите попытку.';
+        } else {
+          message.textContent = 'Вы вышли из DAapp.';
+        }
+      });
     } catch (error) {
       console.error('Ошибка запуска DAapp', error);
-      status.textContent = 'Не удалось проверить подключение. Проверьте интернет и настройки Supabase.';
+      sendButton.disabled = true;
+      message.textContent = 'Нет подключения к сервису. Проверьте интернет и попробуйте обновить страницу.';
     }
   </script>
 </body>
