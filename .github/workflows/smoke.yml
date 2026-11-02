@@ -32,6 +32,43 @@ jobs:
             if curl -fsS http://127.0.0.1:8000/client-app/ >/dev/null; then break; fi
             sleep 1
           done
-          for path in client-app/ business-app/ driver-app/ client-app/profile.js shared/supabase.js; do
+          for path in client-app/ business-app/ admin-app/ driver-app/ client-app/profile.js client-app/places.js business-app/submissions.js admin-app/checks.js shared/supabase.js; do
             curl --fail --silent --show-error "http://127.0.0.1:8000/$path" >/dev/null
           done
+
+  database-integration:
+    name: Isolated PostgreSQL moderation integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: daapp_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d daapp_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: daapp_ci
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Execute real PostgreSQL moderation integration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v psql
+          psql -v ON_ERROR_STOP=1 -f tests/db/setup.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/004_shieli_public_map_places.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/005_shieli_place_submissions.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/006_shieli_admin_moderation.sql
+          psql -v ON_ERROR_STOP=1 -f tests/db/end-to-end.sql
