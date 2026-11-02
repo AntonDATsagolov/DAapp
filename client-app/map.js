@@ -63,11 +63,117 @@ const categoryNames = {
 
 export async function initVillageMap({
   mapElement, mapStatus, retryButton, locateButton,
-  categories, emptyText, coordinateForm, coordinateInput, mapLocation
+  categories, emptyText, placesList, placesRetry, placesCount,
+  coordinateForm, coordinateInput, mapLocation
 }) {
   let map;
   let currentPoint;
   let accuracyCircle;
+  let markerLayer;
+  let places = [];
+  let selectedCategory = 'all';
+  let catalogState = 'loading';
+
+  const placeTypeLabels = {
+    shop: 'Магазин', cafe: 'Кафе', beauty: 'Красота',
+    hotel: 'Гостиница', taxi: 'Такси'
+  };
+
+  function renderCatalog() {
+    placesList.replaceChildren();
+    if (markerLayer) markerLayer.clearLayers();
+    placesRetry.hidden = catalogState !== 'error' && catalogState !== 'unconfigured';
+
+    if (catalogState === 'loading') {
+      placesCount.textContent = 'Загружаем…';
+      emptyText.textContent = 'Загружаем проверенные организации Шиели…';
+      placesList.hidden = true;
+      return;
+    }
+    if (catalogState === 'error' || catalogState === 'unconfigured') {
+      placesCount.textContent = 'Каталог недоступен';
+      emptyText.textContent = catalogState === 'unconfigured'
+        ? 'Каталог организаций ещё не создан в Supabase. Требуется миграция 004.'
+        : 'Каталог сейчас недоступен. Карта Шиели работает независимо от него.';
+      placesList.hidden = true;
+      return;
+    }
+
+    const visible = selectedCategory === 'all'
+      ? places : places.filter(place => place.category === selectedCategory);
+    placesCount.textContent = visible.length + ' из ' + places.length;
+    placesList.hidden = visible.length === 0;
+    emptyText.textContent = visible.length === 0
+      ? (places.length === 0
+        ? 'Пока нет опубликованных проверенных организаций Шиели.'
+        : 'В этой категории пока нет опубликованных организаций.')
+      : 'Нажмите на организацию, чтобы показать её на карте.';
+
+    for (const place of visible) {
+      // Database values are ALWAYS written with textContent, never innerHTML.
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'place-item';
+      const title = document.createElement('strong');
+      title.textContent = place.name;
+      item.append(title);
+      const description = document.createElement('span');
+      description.textContent = placeTypeLabels[place.category] +
+        (place.address ? ' · ' + place.address : '');
+      item.append(description);
+      placesList.append(item);
+
+      if (!markerLayer || !map) continue;
+      const pin = window.L.circleMarker([place.latitude, place.longitude], {
+        radius: 8, weight: 2, color: '#fff', fillColor: '#17634c',
+        fillOpacity: 0.95
+      }).addTo(markerLayer);
+      const popup = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = place.name;
+      popup.append(name);
+      if (place.address) {
+        const address = document.createElement('p');
+        address.textContent = place.address;
+        address.style.margin = '5px 0';
+        popup.append(address);
+      }
+      if (place.phone) {
+        const phone = document.createElement('p');
+        phone.textContent = 'Телефон: ' + place.phone;
+        phone.style.margin = '5px 0';
+        popup.append(phone);
+      }
+      pin.bindPopup(popup);
+      item.addEventListener('click', () => {
+        map.setView([place.latitude, place.longitude], Math.max(map.getZoom(), 16), {
+          animate: false
+        });
+        pin.openPopup();
+      });
+    }
+  }
+
+  async function loadCatalog() {
+    catalogState = 'loading';
+    renderCatalog();
+    try {
+      // The catalog is optional. The map itself remains available if Supabase
+      // or its CDN is unavailable. No user login or geolocation is required.
+      const [{ supabase }, { fetchPublishedPlaces }] = await Promise.all([
+        import('../shared/supabase.js'),
+        import('./places.js')
+      ]);
+      places = await fetchPublishedPlaces(supabase);
+      catalogState = 'ready';
+    } catch (error) {
+      const code = String(error?.code || '');
+      console.warn('Каталог мест DAapp недоступен:', code || 'network_error');
+      catalogState = code === 'PGRST205' || code === '42P01'
+        ? 'unconfigured' : 'error';
+    }
+    renderCatalog();
+  }
 
   const status = (text) => { mapStatus.textContent = text; };
   const showMapError = (text) => {
@@ -103,6 +209,8 @@ export async function initVillageMap({
           minZoom: 3, maxZoom: 19, updateWhenIdle: true, keepBuffer: 1
         }).addTo(map);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
+        markerLayer = L.layerGroup().addTo(map);
+        renderCatalog();
         map.on('tileerror', () => {
           status('Часть карты не загрузилась. Проверьте интернет.');
         });
@@ -116,6 +224,7 @@ export async function initVillageMap({
   }
 
   retryButton.addEventListener('click', () => { void start(); });
+  placesRetry.addEventListener('click', () => { void loadCatalog(); });
 
   locateButton.addEventListener('click', () => {
     if (!map) {
@@ -169,12 +278,13 @@ export async function initVillageMap({
     for (const item of categories.querySelectorAll('button[data-category]')) {
       item.setAttribute('aria-pressed', String(item === button));
     }
-    emptyText.textContent = selected === 'all'
-      ? 'Организации появятся здесь, когда мы добавим их адреса на карту.'
-      : 'Категория «' + categoryNames[selected] + '» пока без подключённых организаций.';
+    selectedCategory = selected;
+    renderCatalog();
   });
 
+  renderCatalog();
   await start();
+  if (map) void loadCatalog();
   return {
     invalidateSize() { if (map) map.invalidateSize(); }
   };
