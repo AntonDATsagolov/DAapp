@@ -50,6 +50,18 @@ test('Profile backfill migration preserves existing rows and client-only default
   assert.doesNotMatch(sql, /update\s+public\.profiles/i);
 });
 
+test('Self-repair migration cannot create arbitrary users or elevate roles', () => {
+  const sql = read('supabase/migrations/003_ensure_own_profile.sql');
+  assert.match(sql, /security definer/);
+  assert.match(sql, /set search_path = ''/);
+  assert.match(sql, /caller_id := auth\.uid\(\)/);
+  assert.match(sql, /values \(caller_id, 'client'\)/);
+  assert.match(sql, /on conflict \(id\) do nothing/);
+  assert.match(sql, /revoke all on function public\.daapp_ensure_own_profile\(\)/);
+  assert.match(sql, /grant execute on function public\.daapp_ensure_own_profile\(\)\s+to authenticated/);
+  assert.doesNotMatch(sql, /grant execute .* to anon/i);
+});
+
 test('Public repository sources never contain a Supabase secret key', () => {
   const paths = [
     'shared/supabase.js',
@@ -83,15 +95,29 @@ test('Profile can load, save only permitted fields, clear, and handle missing ro
   };
   let writeCount = 0;
   let lastWrittenKeys = [];
+  let lastSelectedId = null;
+  let rpcCalls = 0;
+  let rpcEnabled = true;
 
   const fakeSupabase = {
+    async rpc(name, args) {
+      assert.equal(name, 'daapp_ensure_own_profile');
+      assert.equal(args, undefined, 'Do not pass user ID or role to RPC');
+      rpcCalls++;
+      if (!rpcEnabled) return { error: { code: 'PGRST202' } };
+      database[lastSelectedId] ??= {
+        id: lastSelectedId, full_name: null, phone_number: null,
+        role: 'client', driver_vehicle_type: null
+      };
+      return { data: true, error: null };
+    },
     from(table) {
       assert.equal(table, 'profiles');
       let userId = null;
       let payload = null;
       const query = {
         select() { return query; },
-        eq(column, value) { assert.equal(column, 'id'); userId = value; return query; },
+        eq(column, value) { assert.equal(column, 'id'); userId = value; lastSelectedId = value; return query; },
         update(value) { payload = value; return query; },
         async maybeSingle() { return { data: database[userId] ?? null, error: null }; },
         async single() {
@@ -118,7 +144,11 @@ test('Profile can load, save only permitted fields, clear, and handle missing ro
   const role = { textContent: '' };
   const status = { textContent: '' };
   const saveButton = { disabled: false };
-  const controller = createFactory(fakeSupabase)({ form, fullName, phoneNumber, role, status, saveButton });
+  let retryHandler;
+  const retryButton = { hidden: true, addEventListener(_type, handler) { retryHandler = handler; } };
+  const controller = createFactory(fakeSupabase)({
+    form, fullName, phoneNumber, role, status, saveButton, retryButton
+  });
 
   await controller.show({ id: 'u1' });
   assert.equal(form.hidden, false);
@@ -141,6 +171,22 @@ test('Profile can load, save only permitted fields, clear, and handle missing ro
   assert.equal(fullName.value, '');
 
   await controller.show({ id: 'missing' });
-  assert.equal(form.hidden, true);
-  assert.match(status.textContent, /Профиль не найден/);
+  assert.equal(form.hidden, false, 'missing profile should recover automatically');
+  assert.equal(database.missing.role, 'client', 'never elevate new users');
+  assert.equal(role.textContent, 'Житель или гость');
+  assert.equal(rpcCalls, 1, 'one recovery call only');
+  assert.equal(retryButton.hidden, true, 'hide retry when recovered');
+
+  controller.clear();
+  rpcEnabled = false;
+  await controller.show({ id: 'needs-setup' });
+  assert.equal(form.hidden, true, 'no profile form when RPC has not been installed');
+  assert.equal(retryButton.hidden, false, 'offer retry after administrator runs SQL');
+  assert.match(status.textContent, /003_ensure_own_profile/);
+
+  rpcEnabled = true;
+  retryHandler();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(form.hidden, false, 'retry should recover missing profile after setup');
+  assert.equal(database['needs-setup'].role, 'client');
 });
