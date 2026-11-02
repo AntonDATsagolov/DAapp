@@ -58,8 +58,10 @@
         <h2>Мой профиль</h2>
         <p class="muted">Вход нужен для заказов и личных данных. Картой можно пользоваться без регистрации.</p>
         <section class="panel" id="login">
-          <h3>Войти или зарегистрироваться</h3>
-          <p class="muted">Отправим ссылку на e-mail. Если аккаунта ещё нет, он может быть создан автоматически, а вход завершится по ссылке из письма. Пароль не нужен.</p>
+          <h3>Единый аккаунт DAapp</h3>
+          <p class="muted">Один аккаунт жителя или гостя для всех функций. Регистрация с логином, паролем и SMS-проверкой телефона.</p>
+          <p class="profile-links"><a href="../account-app/?next=resident">Войти или зарегистрироваться по номеру и паролю</a></p>
+          <p class="muted">Уже входили раньше по e-mail? Используйте прежнюю ссылку:</p>
           <form id="loginForm">
             <label for="email">Электронная почта</label>
             <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
@@ -70,7 +72,7 @@
           <h3>Вы вошли в DAapp</h3>
           <p id="accountEmail" class="muted"></p>
           <form id="profileForm" hidden>
-            <p class="role">Тип аккаунта: <strong id="accountRole"></strong></p>
+            <p class="role">Базовый доступ: <strong id="accountRole"></strong></p>
             <label for="fullName">Ваше имя</label>
             <input id="fullName" name="fullName" type="text" autocomplete="name" maxlength="80" placeholder="Как к вам обращаться?">
             <label for="phoneNumber">Номер телефона</label>
@@ -196,7 +198,7 @@
         const email = $('#email').value.trim();
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: new URL('./', location.href).href, shouldCreateUser: true }
+          options: { emailRedirectTo: new URL('./', location.href).href, shouldCreateUser: false }
         });
         if (otpError) throw otpError;
         message.textContent = 'Проверьте почту и откройте ссылку для входа.';
