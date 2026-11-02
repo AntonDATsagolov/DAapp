@@ -2,33 +2,251 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#145c47">
+  <meta name="description" content="DAapp для предпринимателей Шиели: заявка на добавление организации">
   <title>DAapp — Шиели · Для предпринимателей</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f6f7f9;color:#18212b}main{max-width:480px;margin:auto;min-height:100dvh;padding:32px 20px}h1{font-size:1.8rem;margin:12px 0}p{line-height:1.5;color:#52606d}.status{margin-top:24px;padding:14px;background:#fff;border-radius:12px;font-size:.9rem}
+    :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#163129;background:#f3f6f3}
+    *{box-sizing:border-box}body{margin:0}main{max-width:620px;margin:auto;min-height:100dvh;padding:22px 16px 72px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .logo{font-size:1.8rem;letter-spacing:-.06em;font-weight:850;color:#145c47;text-decoration:none}
+    .location{font-size:.75rem;font-weight:700;color:#627b6e}
+    h1{font-size:1.7rem;letter-spacing:-.035em;margin:27px 0 9px}
+    h2{font-size:1.08rem;letter-spacing:-.01em;margin:0 0 12px}
+    p{line-height:1.55;color:#526b60;font-size:.91rem}
+    .eyebrow{font-size:.72rem;letter-spacing:.11em;color:#137c55;text-transform:uppercase;font-weight:800}
+    .panel{background:white;border:1px solid #e4ebe4;border-radius:19px;padding:22px 19px;margin-top:18px;box-shadow:0 7px 30px #12472b08}
+    .info{background:#e8f2eb;border:1px solid #d2e7d9;border-radius:13px;padding:12px 14px;font-size:.84rem;line-height:1.55;color:#285947}
+    label{display:block;font-size:.83rem;font-weight:760;margin:17px 0 7px}
+    input,select,textarea{font:inherit;width:100%;border:1px solid #c9d7cc;border-radius:11px;background:#fff;color:#172d24;min-height:47px;padding:11px 12px}
+    textarea{resize:vertical;min-height:73px}
+    input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #89c6a4;outline-offset:1px}
+    .hint{font-size:.72rem;color:#738278;margin:7px 0 0}
+    .btn{display:block;width:100%;border:0;border-radius:12px;padding:13px 16px;min-height:48px;background:#176448;color:#fff;font:inherit;font-weight:760;margin-top:16px;cursor:pointer}
+    .btn:disabled{opacity:.5;cursor:wait}.btn-secondary{background:#edf4ee;color:#15543e}
+    .message{min-height:16px;font-size:.85rem;line-height:1.5;overflow-wrap:anywhere;color:#315f4b}
+    .submission-list{display:flex;flex-direction:column;gap:10px}
+    .submission{padding:13px;border:1px solid #e2eae2;background:#f8faf8;border-radius:12px}
+    .submission-title{display:block;font-size:.91rem;font-weight:800;color:#183b2b}
+    .submission-meta{font-size:.75rem;color:#647f70;margin-top:6px;overflow-wrap:anywhere}
+    .submission-status{display:inline-block;font-size:.71rem;padding:5px 9px;margin-top:8px;border-radius:10px;background:#e8eee9;color:#325846;font-weight:760}
+    .footer{margin-top:27px;text-align:center;font-size:.82rem}.footer a{color:#176448}
+    [hidden]{display:none!important}
+    @media(min-width:720px){main{padding:35px 25px 80px}.panel{padding:26px 29px}h1{font-size:2rem}}
   </style>
 </head>
 <body>
-  <main>
-    <h1>DAapp</h1>
-    <p>Шиели · Для предпринимателей</p>
-    <p>Заказы, каталог и доставка</p>
-    <div id="status" class="status" role="status">Инициализация Supabase…</div>
-  </main>
-  <script type="module">
-    // Общий клиент импортируется из корня монорепозитория.
-    const status = document.querySelector('#status');
+<main>
+  <header class="top">
+    <a class="logo" href="../client-app/" aria-label="DAapp, открыть карту">DAapp.</a>
+    <span class="location">Шиели · Шиелі</span>
+  </header>
+  <span class="eyebrow">Бизнес · Шиели</span>
+  <h1>Добавьте свою организацию на карту</h1>
+  <p>Расскажите о магазине, кафе или услуге. Перед появлением на карте DAapp заявку проверит администратор.</p>
+  <div class="info">Заявка не даёт права управлять чужой организацией и не публикуется автоматически. Укажите достоверные сведения и контакт для проверки.</div>
+
+  <section id="authPanel" class="panel">
+    <h2>Вход для подачи заявки</h2>
+    <p>Для защиты от анонимных заявок используем вход по электронной почте. Пароль не нужен.</p>
+    <form id="loginForm">
+      <label for="email">Электронная почта</label>
+      <input id="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+      <button id="loginButton" class="btn" type="submit" disabled>Получить ссылку для входа</button>
+    </form>
+    <p id="authMessage" class="message" role="status" aria-live="polite">Проверяем вход…</p>
+  </section>
+
+  <section id="appPanel" hidden>
+    <div class="panel">
+      <h2>Новая заявка</h2>
+      <p id="accountText" class="hint"></p>
+      <form id="placeForm">
+        <label for="name">Название организации</label>
+        <input id="name" name="name" type="text" maxlength="100" minlength="2" required placeholder="Название магазина или услуги">
+
+        <label for="category">Категория</label>
+        <select id="category" name="category" required>
+          <option value="">Выберите категорию</option>
+          <option value="shop">Магазин</option>
+          <option value="cafe">Кафе</option>
+          <option value="beauty">Салон красоты</option>
+          <option value="hotel">Гостиница</option>
+          <option value="taxi">Такси / перевозки</option>
+        </select>
+
+        <label for="address">Адрес в посёлке Шиели</label>
+        <textarea id="address" name="address" minlength="5" maxlength="200" required placeholder="Улица, дом, ориентир"></textarea>
+
+        <label for="contactPhone">Телефон для проверки заявки</label>
+        <input id="contactPhone" name="contact_phone" type="tel" inputmode="tel" autocomplete="tel" minlength="6" maxlength="40" required placeholder="+7 ...">
+        <p class="hint">Этот номер доступен только заявителю и администратору. На общую карту он не попадёт автоматически.</p>
+
+        <label for="coordinates">Точные координаты (необязательно)</label>
+        <input id="coordinates" name="coordinates" type="text" maxlength="60" placeholder="44.1760, 66.7410">
+        <p class="hint">Если координаты неизвестны, оставьте пустым. Не используйте центр посёлка вместо адреса организации.</p>
+
+        <button id="submitButton" class="btn" type="submit">Отправить на проверку</button>
+        <p id="submitMessage" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <section class="panel">
+      <h2>Мои заявки</h2>
+      <p class="hint">Здесь видны только заявки, отправленные с этого аккаунта.</p>
+      <p id="listMessage" class="message" role="status" aria-live="polite"></p>
+      <div id="submissionList" class="submission-list"></div>
+      <button id="refreshButton" class="btn btn-secondary" type="button">Обновить статусы</button>
+      <button id="logoutButton" class="btn btn-secondary" type="button">Выйти из аккаунта</button>
+    </section>
+  </section>
+
+  <footer class="footer"><a href="../client-app/">Карта Шиели</a> · <a href="../diagnostics/">Проверить подключение</a></footer>
+</main>
+
+<script type="module">
+  const el = (id) => document.getElementById(id);
+  const authPanel = el('authPanel'), appPanel = el('appPanel');
+  const loginButton = el('loginButton'), loginForm = el('loginForm');
+  const submitButton = el('submitButton');
+  const submitMessage = el('submitMessage'), listMessage = el('listMessage');
+  const submissionList = el('submissionList');
+  let client, actions, userId = undefined, sessionVersion = 0;
+
+  function showView(session) {
+    const user = session?.user || null;
+    const newId = user?.id || null;
+    if (userId === newId) return;
+    userId = newId;
+    sessionVersion++;
+    authPanel.hidden = Boolean(user);
+    appPanel.hidden = !user;
+    el('accountText').textContent = user?.email || '';
+    submissionList.replaceChildren();
+    submitMessage.textContent = '';
+    listMessage.textContent = '';
+    if (user) void refreshSubmissions();
+    else el('authMessage').textContent = 'Введите e-mail для входа.';
+  }
+
+  async function refreshSubmissions() {
+    if (!client || !actions || !userId) return;
+    const version = sessionVersion;
+    const id = userId;
+    listMessage.textContent = 'Загружаем ваши заявки…';
     try {
-      const { supabase } = await import('../shared/supabase.js');
-      // Читаем состояние авторизации — не запрашиваем данные без RLS.
-      const { error } = await supabase.auth.getSession();
-      if (error) throw error;
-      status.textContent = 'Клиент Supabase инициализирован. Функции будут добавлены поэтапно.';
+      const items = await actions.fetchOwnSubmissions(client);
+      if (sessionVersion !== version || userId !== id) return;
+      submissionList.replaceChildren();
+      if (!items.length) {
+        listMessage.textContent = 'Заявок пока нет.';
+        return;
+      }
+      listMessage.textContent = 'Найдено заявок: ' + items.length;
+      for (const item of items) {
+        const card = document.createElement('article');
+        card.className = 'submission';
+        const title = document.createElement('strong');
+        title.className = 'submission-title';
+        title.textContent = item.name;
+        const address = document.createElement('div');
+        address.className = 'submission-meta';
+        address.textContent = item.address || '';
+        const category = document.createElement('div');
+        category.className = 'submission-meta';
+        category.textContent = actions.CATEGORIES[item.category] || '';
+        const status = document.createElement('span');
+        status.className = 'submission-status';
+        status.textContent = actions.STATUS_LABELS[item.status] || 'На проверке';
+        card.append(title, category, address, status);
+        submissionList.append(card);
+      }
     } catch (error) {
-      console.error('Ошибка запуска DAapp', error);
-      status.textContent = 'Не удалось проверить подключение. Проверьте интернет и настройки Supabase.';
+      if (sessionVersion !== version || userId !== id) return;
+      console.warn('DAapp: список заявок недоступен', error?.code || 'network');
+      listMessage.textContent = 'Список недоступен. Возможно, SQL-миграция 005 ещё не выполнена в Supabase.';
     }
-  </script>
+  }
+
+  try {
+    [client, actions] = await Promise.all([
+      import('../shared/supabase.js').then(x => x.supabase),
+      import('./submissions.js')
+    ]);
+    client.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => showView(session), 0);
+    });
+    const {data,error} = await client.auth.getSession();
+    if (error) throw error;
+    showView(data.session);
+    loginButton.disabled = false;
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      loginButton.disabled = true;
+      el('authMessage').textContent = 'Отправляем письмо…';
+      try {
+        const {error} = await client.auth.signInWithOtp({
+          email: el('email').value.trim(),
+          options: { emailRedirectTo: new URL('./', location.href).href }
+        });
+        if (error) throw error;
+        el('authMessage').textContent = 'Письмо отправлено. Откройте ссылку для входа на этом устройстве.';
+      } catch (error) {
+        console.error('Ошибка входа', error?.code || 'network');
+        el('authMessage').textContent = 'Не удалось отправить письмо. Проверьте Email и Redirect URLs в Supabase.';
+      } finally {
+        loginButton.disabled = false;
+      }
+    });
+
+    el('placeForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!userId || submitButton.disabled) return;
+      const version = sessionVersion;
+      const id = userId;
+      const form = el('placeForm');
+      const fields = Object.fromEntries(new FormData(form).entries());
+      submitButton.disabled = true;
+      submitMessage.textContent = 'Отправляем заявку…';
+      try {
+        const result = await actions.submitPlace(client, fields);
+        if (sessionVersion !== version || userId !== id) return;
+        if (result.error) {
+          submitMessage.textContent = result.error;
+        } else {
+          form.reset();
+          submitMessage.textContent = 'Заявка отправлена! Публикация возможна только после проверки.';
+          void refreshSubmissions();
+        }
+      } catch (error) {
+        console.warn('Ошибка отправки заявки', error?.code || 'network');
+        if (sessionVersion === version && userId === id)
+          submitMessage.textContent = 'Сеть недоступна. Проверьте соединение и повторите отправку.';
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    el('refreshButton').addEventListener('click', () => { void refreshSubmissions(); });
+    el('logoutButton').addEventListener('click', async () => {
+      el('logoutButton').disabled = true;
+      try {
+        const {error} = await client.auth.signOut();
+        if (error) throw error;
+        showView(null);
+      } catch (error) {
+        listMessage.textContent = 'Не удалось выйти. Повторите попытку.';
+      } finally {
+        el('logoutButton').disabled = false;
+      }
+    });
+  } catch (error) {
+    console.error('DAapp business startup error', error?.code || 'network');
+    loginButton.disabled = true;
+    el('authMessage').textContent = 'Не удалось подключиться. Проверьте интернет и настройки Supabase.';
+  }
+</script>
 </body>
 </html>
