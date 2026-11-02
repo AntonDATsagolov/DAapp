@@ -40,6 +40,16 @@ test('Shared Supabase and client profile modules have valid JS', () => {
   assert.doesNotThrow(() => new Function('supabase', profile));
 });
 
+
+test('Profile backfill migration preserves existing rows and client-only default', () => {
+  const sql = read('supabase/migrations/002_backfill_existing_profiles.sql');
+  assert.match(sql, /insert into public\.profiles \(id, role\)/);
+  assert.match(sql, /select u\.id, 'client'/);
+  assert.match(sql, /on conflict \(id\) do nothing/);
+  assert.doesNotMatch(sql, /delete\s+from\s+public\.profiles/i);
+  assert.doesNotMatch(sql, /update\s+public\.profiles/i);
+});
+
 test('Public repository sources never contain a Supabase secret key', () => {
   const paths = [
     'shared/supabase.js',

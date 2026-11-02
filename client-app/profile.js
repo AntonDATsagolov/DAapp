@@ -39,7 +39,7 @@ export function createProfileController({ form, fullName, phoneNumber, role, sta
       if (currentVersion !== version) return;
       if (error) throw error;
       if (!data) {
-        status.textContent = 'Профиль не найден. Проверьте, что в Supabase настроено автоматическое создание profiles при регистрации.';
+        status.textContent = 'Профиль не найден. Возможно, аккаунт создан до настройки базы. Администратору нужно проверить миграцию 002_backfill_existing_profiles.sql в Supabase.';
         return;
       }
 
