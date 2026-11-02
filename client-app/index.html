@@ -58,12 +58,12 @@
         <h2>Мой профиль</h2>
         <p class="muted">Вход нужен для заказов и личных данных. Картой можно пользоваться без регистрации.</p>
         <section class="panel" id="login">
-          <h3>Войти по электронной почте</h3>
-          <p class="muted">Отправим ссылку для входа — пароль не нужен.</p>
+          <h3>Войти или зарегистрироваться</h3>
+          <p class="muted">Отправим ссылку на e-mail. Если аккаунта ещё нет, он может быть создан автоматически, а вход завершится по ссылке из письма. Пароль не нужен.</p>
           <form id="loginForm">
             <label for="email">Электронная почта</label>
             <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
-            <button id="sendButton" class="action" type="submit" disabled>Отправить ссылку</button>
+            <button id="sendButton" class="action" type="submit" disabled>Войти / зарегистрироваться</button>
           </form>
         </section>
         <section class="panel" id="account" hidden>
@@ -83,6 +83,7 @@
         </section>
         <p id="message" class="message" role="status" aria-live="polite">Проверяем авторизацию…</p>
         <p class="profile-links muted"><a href="../business-app/">Предпринимателям: добавить организацию</a></p>
+        <p class="profile-links muted"><a href="../driver-app/">Водителям: зарегистрироваться</a></p>
         <p class="profile-links muted"><a href="../diagnostics/">Проверить соединение и настройки Supabase</a></p>
       </div>
     </section>
@@ -195,7 +196,7 @@
         const email = $('#email').value.trim();
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: new URL('./', location.href).href }
+          options: { emailRedirectTo: new URL('./', location.href).href, shouldCreateUser: true }
         });
         if (otpError) throw otpError;
         message.textContent = 'Проверьте почту и откройте ссылку для входа.';

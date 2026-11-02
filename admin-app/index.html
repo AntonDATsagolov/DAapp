@@ -72,7 +72,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
 
   <section id="loginPanel" class="card">
     <h2>Вход администратора</h2>
-    <p>Войдите по электронной почте. Доступ определяет сервер Supabase, а не статус в браузере.</p>
+    <p>Вход только для уже существующих аккаунтов. Административные права назначаются отдельно в Supabase, саморегистрация здесь отключена.</p>
     <form id="loginForm">
       <label for="email">Адрес электронной почты</label>
       <input id="email" type="email" placeholder="name@example.com" autocomplete="email" required>
@@ -480,7 +480,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       try {
         const {error} = await client.auth.signInWithOtp({
           email: $('email').value.trim(),
-          options: { emailRedirectTo: new URL('./',location.href).href }
+          options: { emailRedirectTo: new URL('./',location.href).href, shouldCreateUser: false }
         });
         if (error) throw error;
         $('loginStatus').textContent = 'Откройте письмо со ссылкой для входа.';

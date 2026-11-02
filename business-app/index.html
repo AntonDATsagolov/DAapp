@@ -48,12 +48,12 @@
   <div class="info">Заявка не даёт права управлять чужой организацией и не публикуется автоматически. Укажите достоверные сведения и контакт для проверки.</div>
 
   <section id="authPanel" class="panel">
-    <h2>Вход для подачи заявки</h2>
-    <p>Для защиты от анонимных заявок используем вход по электронной почте. Пароль не нужен.</p>
+    <h2>Вход или регистрация</h2>
+    <p>Войти можно по e-mail без пароля. Если аккаунта DAapp ещё нет, он может быть создан автоматически. Вход завершится по ссылке из письма.</p>
     <form id="loginForm">
       <label for="email">Электронная почта</label>
       <input id="email" type="email" autocomplete="email" placeholder="name@example.com" required>
-      <button id="loginButton" class="btn" type="submit" disabled>Получить ссылку для входа</button>
+      <button id="loginButton" class="btn" type="submit" disabled>Войти / зарегистрироваться</button>
     </form>
     <p id="authMessage" class="message" role="status" aria-live="polite">Проверяем вход…</p>
   </section>
@@ -189,7 +189,7 @@
       try {
         const {error} = await client.auth.signInWithOtp({
           email: el('email').value.trim(),
-          options: { emailRedirectTo: new URL('./', location.href).href }
+          options: { emailRedirectTo: new URL('./', location.href).href, shouldCreateUser: true }
         });
         if (error) throw error;
         el('authMessage').textContent = 'Письмо отправлено. Откройте ссылку для входа на этом устройстве.';

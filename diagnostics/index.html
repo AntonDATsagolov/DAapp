@@ -32,9 +32,13 @@ small{display:block;margin-top:8px;color:#667786;line-height:1.5}code{overflow-w
 <p><a href="../client-app/">Вернуться в приложение</a></p>
 <div class="panel">
   <strong>Если письмо для входа не приходит или открывает localhost</strong>
-  <p>В Supabase → Authentication → URL Configuration добавьте этот точный адрес в Redirect URLs:</p>
-  <code id="redirect"></code>
-  <p>Включите Email provider в Authentication → Providers.</p>
+  <p>В Supabase → Authentication → URL Configuration разрешите адреса всех четырёх интерфейсов:</p>
+  <div class="item"><strong>Жители</strong><code id="redirectClient"></code></div>
+  <div class="item"><strong>Предприниматели</strong><code id="redirectBusiness"></code></div>
+  <div class="item"><strong>Водители</strong><code id="redirectDriver"></code></div>
+  <div class="item"><strong>Администратор (только вход)</strong><code id="redirectAdmin"></code></div>
+  <p>В Authentication → Providers включите Email, а в Authentication → Settings разрешите регистрацию новых пользователей (Allow new users to sign up). Администраторы назначаются отдельно.</p>
+  <p>При использовании стандартной почтовой службы Supabase есть ограничения на число писем. Для публичного запуска настройте собственный SMTP.</p>
   <a href="https://supabase.com/dashboard/project/huajxbmapmlprcyytsvu/auth/url-configuration" rel="noopener noreferrer" target="_blank">Открыть настройки Supabase</a>
 </div>
 <script type="module">
@@ -45,7 +49,14 @@ const ready = (id, ok, message) => {
   el.textContent = (ok ? '✓ ' : '✕ ') + message;
 };
 const root = new URL('../', location.href);
-$('redirect').textContent = new URL('client-app/', root).href;
+for (const [id,path] of [
+  ['redirectClient','client-app/'],
+  ['redirectBusiness','business-app/'],
+  ['redirectDriver','driver-app/'],
+  ['redirectAdmin','admin-app/']
+]) {
+  $(id).textContent = new URL(path, root).href;
+}
 
 async function fetchWithTimeout(url) {
   const controller = new AbortController();
