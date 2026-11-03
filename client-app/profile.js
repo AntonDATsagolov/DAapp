@@ -32,6 +32,15 @@ export function createProfileController({ form, fullName, phoneNumber, role, sta
 
     status.textContent = 'Загружаем ваш профиль…';
     try {
+      const review=await supabase.rpc('daapp_account_approved');
+      if(currentVersion!==version)return;
+      // Allow older DAapp installations before SQL 009 is applied.
+      if(review.error && review.error.code!=='PGRST202')throw review.error;
+      if(!review.error && review.data!==true) {
+        status.textContent='Ваш аккаунт ожидает одобрения. Откройте единый кабинет DAapp для проверки статуса.';
+        if(retryButton)retryButton.hidden=false;
+        return;
+      }
       // Выбираем профиль текущего пользователя. База дополнительно проверяет RLS.
       const readOwnProfile = () => supabase
         .from('profiles')
