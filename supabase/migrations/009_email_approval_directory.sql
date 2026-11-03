@@ -186,10 +186,10 @@ grant execute on function public.daapp_set_phone_visibility(boolean)
 -- Storage policies cannot query auth.users as a browser role directly.
 create function public.daapp_email_confirmed()
 returns boolean language sql stable security definer set search_path=''
-as $
+as $$
  select exists(select 1 from auth.users u
     where u.id=(select auth.uid()) and u.email_confirmed_at is not null);
-$;
+$$;
 revoke all on function public.daapp_email_confirmed()
   from public,anon,authenticated;
 grant execute on function public.daapp_email_confirmed() to authenticated;
