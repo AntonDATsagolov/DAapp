@@ -6,7 +6,7 @@ export const MAX_AVATAR_BYTES=1572864;
 const IMAGE_TYPES=Object.freeze({'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp'});
 
 export function formatKzPhone(raw) {
-  const s=String(raw||'').replace(/[\\s()\\-]/g,'');
+  const s=String(raw||'').replace(/[\s()\-]/g,'');
   const p=/^8[0-9]{10}$/.test(s)?'+7'+s.slice(1):s;
   return /^[+]7[0-9]{10}$/.test(p)?p:null;
 }
@@ -19,7 +19,7 @@ export function validateEmailRegistration(values) {
   const password=String(values.password||'');
   const residency=values.residency;
   if(!USERNAME.test(username))return {error:'Логин: 4–24 латинских символа, цифры или _. Первая — буква.'};
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length>254)
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length>254)
     return {error:'Введите правильный адрес электронной почты.'};
   if(!phone)return {error:'Укажите номер Казахстана в формате +7 777 123 45 67.'};
   if(!Number.isInteger(age) || age<13 || age>120)
@@ -81,7 +81,7 @@ export async function uploadAvatar(client,userId,file) {
 }
 
 export function avatarPublicUrl(client,path) {
-  if(!path || !/^[0-9a-f-]{36}\\/[0-9a-f-]{36}\\.(jpg|png|webp)$/i.test(path))
+  if(!path || !/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|png|webp)$/i.test(path))
     return null;
   const {data}=client.storage.from('daapp-avatars').getPublicUrl(path);
   return data?.publicUrl||null;
