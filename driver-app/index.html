@@ -73,6 +73,11 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     <p id="loginMessage" class="message" role="status" aria-live="polite">Проверяем авторизацию…</p>
   </section>
 
+  <section id="approvalPanel" class="panel" hidden>
+    <h2>Ожидается одобрение аккаунта</h2>
+    <p id="approvalMessage">Проверяем вашу регистрацию…</p>
+    <p><a href="../account-app/?next=driver">Мой аккаунт и статус регистрации</a></p>
+  </section>
   <section id="appPanel" hidden>
     <div class="panel">
       <h2>Мой кабинет</h2>
@@ -218,11 +223,33 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     revision++;
     currentDriver = null;
     $('authPanel').hidden = Boolean(user);
-    $('appPanel').hidden = !user;
+    $('appPanel').hidden = true;
+    $('approvalPanel').hidden = !user;
+    $('approvalMessage').textContent = 'Проверяем статус одобрения…';
     $('accountEmail').textContent = user?.email || '';
     updateLineState(null);
-    if (user) void loadDriver();
-    else {
+    if (user) {
+      const version=revision;
+      void (async()=>{
+        try {
+          const {data,error}=await client.rpc('daapp_account_approved');
+          if(version!==revision || userId!==user.id)return;
+          // Legacy installations without 009 remain usable until migration.
+          if(error && error.code!=='PGRST202')throw error;
+          if(!error && data!==true) {
+            $('approvalMessage').textContent=
+              'Новый аккаунт ожидает одобрения администратора. Водительская анкета пока недоступна.';
+            return;
+          }
+          $('approvalPanel').hidden=true;
+          $('appPanel').hidden=false;
+          void loadDriver();
+        }catch{
+          if(version===revision)
+            $('approvalMessage').textContent='Проверка доступа недоступна. Обновите страницу позже.';
+        }
+      })();
+    } else {
       $('driverForm').reset();
       setMessage('loginMessage', 'Введите e-mail, чтобы войти.');
     }

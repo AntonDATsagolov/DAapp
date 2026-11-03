@@ -51,7 +51,8 @@ async function startApp(app) {
     './profile.js': {createProfileController: () => ({show(){},clear(){}})},
     './submissions.js': {},
     './driver.js': {},
-    './checks.js': {}
+    './checks.js': {},
+    './accounts.js': {createAccountModerator:()=>({reset(){},refresh(){}})}
   };
   function load(path) {
     assert.ok(Object.hasOwn(moduleMap,path), 'Unexpected module: ' + path);

@@ -59,10 +59,17 @@ Deno.serve(async(request)=>{
     if(lookupError || !identity?.user_id)
       return json(401,{error:'Invalid credentials'},origin);
 
+    const {data:approval,error:approvalError}=await privileged
+      .from('daapp_account_applications').select('status')
+      .eq('user_id',identity.user_id).maybeSingle();
+    if(approvalError)return json(503,{error:'Approval system unavailable'},origin);
+    if(approval && approval.status!=='approved')
+      return json(401,{error:'Invalid credentials'},origin);
+
     const {data:target,error:accountError}=await privileged.auth.admin
       .getUserById(identity.user_id);
-    if(accountError || !target?.user?.phone ||
-       !target.user.phone_confirmed_at)
+    if(accountError || !target?.user?.email ||
+       !target.user.email_confirmed_at)
       return json(401,{error:'Invalid credentials'},origin);
 
     // Password is verified by Supabase Auth, NEVER in our Edge Function.
@@ -70,7 +77,7 @@ Deno.serve(async(request)=>{
       auth:{persistSession:false,autoRefreshToken:false}
     });
     const {data:login,error:authError}=await publicClient.auth.signInWithPassword({
-      phone:target.user.phone, password
+      email:target.user.email, password
     });
     if(authError || !login?.session?.access_token || !login?.session?.refresh_token ||
        login.user?.id!==identity.user_id)

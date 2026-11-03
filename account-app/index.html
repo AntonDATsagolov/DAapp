@@ -3,370 +3,307 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#175b43">
-<meta name="description" content="Единый аккаунт DAapp: логин, пароль, телефон, возраст">
-<title>DAapp — Единый аккаунт</title>
+<meta name="theme-color" content="#195e48">
+<meta name="description" content="DAapp — регистрация с логином, паролем и подтверждением e-mail, без SMS">
+<title>DAapp — Регистрация и вход</title>
 <style>
-:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a3a2a;background:#f3f7f3}
-*{box-sizing:border-box}body{margin:0}main{max-width:570px;margin:auto;padding:23px 17px 70px;min-height:100dvh}
-header{display:flex;justify-content:space-between;align-items:center}a{color:#1d6950;text-decoration:none}
-.logo{font-size:1.85rem;font-weight:850;letter-spacing:-.07em}.location{font-size:.75rem;color:#748579;font-weight:650}
-h1{font-size:1.85rem;line-height:1.17;letter-spacing:-.045em;margin:30px 0 10px}h2{font-size:1.12rem;letter-spacing:-.02em;margin:0 0 11px}
-p{font-size:.88rem;line-height:1.56;color:#61786a}.eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;font-weight:780;color:#258055}
-.card{border:1px solid #e1eae2;background:#fff;border-radius:19px;padding:22px;margin:17px 0;box-shadow:0 6px 25px #123d2808}
-.info{background:#eef5ef;border-radius:13px;padding:13px 15px;font-size:.84rem;line-height:1.55;color:#376249}
-.tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:18px 0}
-.tabs button{background:#e6eee9;color:#34604a;border:0;border-radius:11px;padding:12px 7px;font-weight:750;cursor:pointer}
-.tabs button[aria-pressed=true]{background:#175e46;color:white}
-label.field{display:block;font-weight:720;font-size:.82rem;margin:16px 0 7px}
-input{font:inherit;width:100%;border:1px solid #cbd9ce;border-radius:12px;min-height:47px;background:#fff;color:#17372a;padding:11px 12px}
-input:focus-visible,button:focus-visible{outline:2px solid #93c9aa;outline-offset:2px}
-button{cursor:pointer;font:inherit}button:disabled{cursor:wait;opacity:.5}
-.btn{background:#17664b;color:white;border:0;border-radius:12px;padding:12px 15px;min-height:47px;font-weight:750}
-.btn.full{display:block;width:100%;margin-top:17px}.btn.alt{color:#225e44;background:#e8f2eb}
-.status{min-height:22px;font-size:.84rem;color:#305e45;line-height:1.55;overflow-wrap:anywhere}
-.small{font-size:.76rem;color:#74877c}.route{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.route a{flex:1;min-width:135px;padding:12px;background:#eaf3ec;color:#205c44;border-radius:10px;text-align:center;font-size:.85rem;font-weight:740}
-.line{border-top:1px solid #e2ece3;margin:19px 0}.role{padding:12px;background:#eef5ef;border-radius:11px;margin:8px 0;font-size:.86rem}
-.role strong{display:block}.role span{display:block;margin-top:4px;color:#668270;font-size:.78rem}
-.legacy{border-top:1px solid #e0eae3;margin-top:24px;padding-top:15px}
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1c382c;background:#f3f7f4}
+*{box-sizing:border-box}body{margin:0}main{max-width:600px;margin:auto;padding:24px 17px 65px}
+header{display:flex;align-items:center;justify-content:space-between}.logo{font-size:1.8rem;font-weight:850;letter-spacing:-.06em}
+a{color:#186548;text-decoration:none}a:hover{text-decoration:underline}
+.tag{font-size:.72rem;letter-spacing:.09em;color:#4f866a;font-weight:750;text-transform:uppercase;margin-top:31px}
+h1{font-size:1.9rem;line-height:1.18;letter-spacing:-.04em;margin:12px 0}h2{font-size:1.13rem;letter-spacing:-.025em;margin:0 0 12px}
+p{line-height:1.55;color:#63766a;font-size:.88rem}label{display:block;font-size:.85rem;font-weight:720;margin-top:15px;margin-bottom:6px}
+.card{background:#fff;border:1px solid #e0e9e2;border-radius:18px;padding:22px 20px;margin:15px 0;box-shadow:0 6px 24px #183e2707}
+.info{background:#ebf3ee;color:#37644e;border-radius:12px;padding:13px;font-size:.83rem;line-height:1.5}
+.tabbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:21px}
+.tabbar button{background:#e4eee7;color:#22563e;border:0;border-radius:12px;padding:13px;font-weight:800}
+.tabbar button[aria-pressed=true]{background:#185e44;color:white}
+button,input,select{font:inherit}input,select{display:block;width:100%;border:1px solid #c6d9cb;border-radius:11px;min-height:46px;padding:11px 12px;background:white;color:#1b3b2e}
+input[type=file]{font-size:.84rem;padding:10px;line-height:1.4}input[type=checkbox]{width:20px;min-width:20px;height:20px;min-height:20px;margin:2px 0 0}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid #80c59c;outline-offset:2px}
+button{cursor:pointer}button:disabled{cursor:wait;opacity:.55}
+.btn{border:0;background:#176449;color:white;border-radius:12px;padding:12px 15px;min-height:46px;font-weight:750}
+.btn.alt{background:#e6f0e9;color:#1b5840}.btn.block{display:block;width:100%;margin-top:17px}
+.message{min-height:18px;color:#275b42;font-size:.84rem;line-height:1.45;overflow-wrap:anywhere}
+.hint{font-size:.75rem;color:#738779;margin:5px 0}
+.checkrow{display:flex;align-items:flex-start;gap:10px;margin-top:18px}
+.checkrow label{margin:0;font-size:.81rem;font-weight:550;line-height:1.5}
+.state{padding:14px;border-radius:12px;background:#edf3ee;color:#335e45;font-size:.88rem;line-height:1.55}
+.state[data-status=pending]{background:#fff5de;color:#79602d}
+.state[data-status=rejected]{background:#fff0ed;color:#893e37}
+.profile{display:flex;align-items:center;gap:14px}.avatar{border-radius:50%;height:76px;width:76px;object-fit:cover;background:#dfece2}
+.links{display:grid;gap:9px;margin:16px 0}.links a{background:#ebf2ed;border-radius:11px;padding:12px;font-weight:730;text-align:center}
 [hidden]{display:none!important}
+footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
 </style>
 </head>
 <body>
 <main>
-  <header><a class="logo" href="../client-app/">DAapp.</a><span class="location">Шиели · Шиелі</span></header>
-  <div class="eyebrow" style="margin-top:26px">Один аккаунт · Все сервисы</div>
-  <h1>Житель. Водитель. Предприниматель.</h1>
-  <p>Регистрируйтесь один раз. Каждый пользователь DAapp может пользоваться городскими сервисами, а после отдельной проверки — принимать заказы как водитель или представлять свой бизнес.</p>
+  <header><a class="logo" href="../client-app/">DAapp.</a><span style="font-size:.76rem;color:#64816d">Шиели · Шиелі</span></header>
+  <div class="tag">Один аккаунт — все возможности</div>
+  <h1>Регистрация и вход</h1>
+  <p>Сначала зарегистрируйтесь, подтвердите e-mail и дождитесь решения администратора. SMS не требуется. Житель или гость сможет дополнительно стать водителем или предпринимателем.</p>
 
   <section id="guestPanel">
-    <div class="tabs" role="group" aria-label="Войти или зарегистрироваться">
-      <button id="loginTab" type="button" aria-pressed="true">Вход</button>
-      <button id="signupTab" type="button" aria-pressed="false">Регистрация</button>
+    <div class="tabbar" role="group" aria-label="Регистрация или вход">
+      <button id="signupTab" type="button" aria-pressed="true">Регистрация</button>
+      <button id="loginTab" type="button" aria-pressed="false">Вход</button>
     </div>
-    <section id="loginPanel" class="card">
-      <h2>Войти по логину и паролю</h2>
-      <form id="loginForm">
-        <label class="field" for="loginId">Логин или номер телефона</label>
-        <input id="loginId" autocomplete="username" required placeholder="my_login или +7 777 123 45 67">
-        <label class="field" for="loginPassword">Пароль</label>
-        <input id="loginPassword" type="password" autocomplete="current-password" minlength="10" required>
-        <button class="btn full" id="loginButton" type="submit">Войти</button>
-        <p id="loginMessage" class="status" role="status" aria-live="polite"></p>
-      </form>
-      <p class="small">По номеру телефона вход работает после подключения Supabase Phone Auth. По отдельному логину — после развёртывания защищённой серверной функции.</p>
-    </section>
-    <section id="signupPanel" class="card" hidden>
-      <h2>Регистрация нового аккаунта</h2>
-      <p class="info">Базовый статус — житель или гость Шиели. Дополнительные статусы подключаются отдельно; новые аккаунты не получают прав администратора.</p>
+    <section id="signupPanel" class="card">
+      <h2>Новый аккаунт</h2>
+      <p class="info">Заявку проверит администратор DAapp. Пока она не одобрена, закрытые функции недоступны.</p>
       <form id="signupForm">
-        <label class="field" for="signupUsername">Придумайте логин</label>
-        <input id="signupUsername" autocomplete="username" minlength="4" maxlength="24" pattern="[a-zA-Z][a-zA-Z0-9_]{3,23}" required placeholder="primer_login">
-        <p class="small">Латинские буквы, цифры и _. Логин должен быть уникальным.</p>
-        <label class="field" for="signupPhone">Номер телефона</label>
+        <label for="signupUsername">Логин</label>
+        <input id="signupUsername" autocomplete="username" required minlength="4" maxlength="24" pattern="[a-zA-Z][a-zA-Z0-9_]{3,23}" placeholder="my_login">
+        <p class="hint">Латинские буквы, цифры и нижнее подчёркивание.</p>
+        <label for="signupEmail">Электронная почта</label>
+        <input id="signupEmail" type="email" autocomplete="email" required placeholder="name@example.com">
+        <label for="signupPhone">Номер телефона для связи</label>
         <input id="signupPhone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+7 777 123 45 67">
-        <label class="field" for="signupAge">Возраст</label>
-        <input id="signupAge" type="number" inputmode="numeric" min="13" max="120" required placeholder="Например, 25">
-        <p class="small">Указывается возраст на момент регистрации. Данные о возрасте не являются подтверждением совершеннолетия.</p>
-        <label class="field" for="signupPassword">Пароль</label>
+        <p class="hint">Номер пока не подтверждается SMS. По умолчанию другим людям он не виден.</p>
+        <label for="signupAge">Возраст</label>
+        <input id="signupAge" type="number" min="13" max="120" inputmode="numeric" required placeholder="Например, 25">
+        <label for="signupResidency">Кто вы?</label>
+        <select id="signupResidency" required>
+          <option value="">Выберите</option><option value="resident">Житель Шиели</option><option value="guest">Гость Шиели</option>
+        </select>
+        <label for="signupPassword">Пароль</label>
         <input id="signupPassword" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
-        <label class="field" for="signupPasswordAgain">Повторите пароль</label>
+        <label for="signupPasswordAgain">Повторите пароль</label>
         <input id="signupPasswordAgain" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
-        <button class="btn full" id="signupButton" type="submit">Зарегистрироваться и получить SMS</button>
-        <p id="signupMessage" class="status" role="status" aria-live="polite"></p>
+        <label for="signupAvatar">Аватарка (необязательно)</label>
+        <input id="signupAvatar" type="file" accept="image/jpeg,image/png,image/webp">
+        <p class="hint">Фото до 1,5 МБ. После подтверждения e-mail загрузите его в личном кабинете — до входа файл не передаётся.</p>
+        <div class="checkrow">
+          <input id="signupPublishPhone" type="checkbox">
+          <label for="signupPublishPhone">Я разрешаю показывать мой номер в справочнике DAapp, чтобы другие зарегистрированные пользователи могли мне звонить. Только после одобрения аккаунта. Доступно с 18 лет.</label>
+        </div>
+        <button class="btn block" id="signupButton" type="submit">Подать заявку и подтвердить почту</button>
+        <p id="signupMessage" class="message" role="status" aria-live="polite"></p>
       </form>
     </section>
-    <section id="smsPanel" class="card" hidden>
-      <h2>Подтверждение телефона</h2>
-      <p>Введите SMS-код, отправленный на <strong id="pendingPhone"></strong>. Код никому не сообщайте.</p>
-      <form id="smsForm">
-        <label class="field" for="smsCode">Код из SMS</label>
-        <input id="smsCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{4,8}" required placeholder="000000">
-        <button id="smsButton" type="submit" class="btn full">Подтвердить номер</button>
-        <p id="smsMessage" class="status" role="status" aria-live="polite"></p>
+    <section id="loginPanel" class="card" hidden>
+      <h2>Вход в DAapp</h2>
+      <form id="loginForm">
+        <label for="loginIdentifier">Логин или e-mail</label>
+        <input id="loginIdentifier" autocomplete="username" required placeholder="my_login или name@example.com">
+        <label for="loginPassword">Пароль</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+        <button id="loginButton" class="btn block" type="submit">Войти</button>
+        <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
       </form>
-    </section>
-    <section class="card legacy">
-      <h2>Уже регистрировались раньше по e-mail?</h2>
-      <p>Старые аккаунты сохраняются. Войдите по прежней ссылке из письма — не создавайте второй аккаунт на тот же телефон. Привязать телефон и пароль можно в личном кабинете ниже.</p>
-      <form id="emailForm">
-        <label class="field" for="legacyEmail">Электронная почта</label>
-        <input id="legacyEmail" type="email" autocomplete="email" required placeholder="name@example.com">
-        <button class="btn alt full" id="emailButton" type="submit">Войти по старому e-mail</button>
-        <p id="emailMessage" class="status" role="status" aria-live="polite"></p>
-      </form>
+      <p class="hint">По e-mail + паролю можно войти сразу после подтверждения почты и одобрения. Вход по логину заработает после подключения серверной функции в Supabase.</p>
+      <p class="hint">Ранее входили по ссылке из письма? <a href="../client-app/">Старый вход в профиле DAapp</a> сохранён.</p>
     </section>
   </section>
 
   <section id="memberPanel" hidden>
     <section class="card">
-      <h2>Мой единый аккаунт</h2>
-      <p id="memberIdentifier"></p>
-      <div id="basicRole" class="role"><strong>Житель или гость</strong><span>Базовый доступ DAapp — всегда доступен</span></div>
-      <div id="driverRole" class="role"><strong>Водитель</strong><span id="driverRoleStatus">Анкета не подана</span></div>
-      <div id="businessRole" class="role"><strong>Предприниматель</strong><span id="businessRoleStatus">Пока нет подтверждённой организации</span></div>
-      <p id="memberMessage" class="status" role="status" aria-live="polite"></p>
-      <div class="route">
-        <a id="continueLink" href="../client-app/">Перейти в приложение</a>
-        <a href="../driver-app/">Кабинет водителя</a>
-        <a href="../business-app/">Кабинет бизнеса</a>
+      <div class="profile">
+        <img id="currentAvatar" class="avatar" alt="Аватар пользователя" hidden>
+        <div><h2 id="welcome">Мой аккаунт</h2><p id="memberEmail" style="margin:2px 0"></p></div>
       </div>
-      <button id="logoutButton" type="button" class="btn alt full">Выйти</button>
+      <p id="decisionStatus" class="state" data-status="pending" role="status" aria-live="polite">Загружаем статус…</p>
+      <p id="memberInfo" class="hint"></p>
+      <button id="refreshAccount" type="button" class="btn alt block">Проверить статус снова</button>
+      <div id="approvedLinks" class="links" hidden>
+        <a id="continueLink" href="../client-app/">Открыть DAapp</a>
+        <a href="../driver-app/">Кабинет водителя</a>
+        <a href="../business-app/">Кабинет предпринимателя</a>
+        <a href="../directory-app/">Контакты пользователей</a>
+      </div>
+      <button id="logoutButton" type="button" class="btn alt block">Выйти</button>
     </section>
-
-    <section id="completeProfilePanel" class="card" hidden>
-      <h2>Закрепить логин и возраст</h2>
-      <p>Введите свой логин и возраст после подтверждения телефона. Логин нельзя свободно менять после сохранения.</p>
-      <form id="completeForm">
-        <label class="field" for="completeUsername">Логин</label>
-        <input id="completeUsername" minlength="4" maxlength="24" required placeholder="primer_login">
-        <label class="field" for="completeAge">Возраст</label>
-        <input id="completeAge" type="number" min="13" max="120" required>
-        <button id="completeButton" type="submit" class="btn full">Сохранить логин</button>
-        <p id="completeMessage" class="status" role="status" aria-live="polite"></p>
+    <section id="avatarPanel" class="card">
+      <h2>Фото профиля</h2>
+      <p>После подтверждения e-mail можно загрузить аватар. Он будет виден другим пользователям, если ваш аккаунт одобрен и вы включите отображение в справочнике.</p>
+      <form id="avatarForm">
+        <label for="avatarFile">Выбрать фото (JPG, PNG, WebP, до 1,5 МБ)</label>
+        <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" required>
+        <button id="avatarButton" class="btn block" type="submit">Сохранить аватар</button>
+        <p id="avatarMessage" class="message" role="status" aria-live="polite"></p>
       </form>
     </section>
-    <section id="linkPhonePanel" class="card" hidden>
-      <h2>Привязать телефон к старому аккаунту</h2>
-      <p>Если вы раньше входили по e-mail, можно подтвердить номер и установить пароль в этом же аккаунте — без потери своих заявок и статусов.</p>
-      <form id="linkPhoneForm">
-        <label class="field" for="linkPhone">Номер +7</label>
-        <input id="linkPhone" type="tel" autocomplete="tel" required placeholder="+7 777 123 45 67">
-        <button class="btn full" id="linkPhoneButton" type="submit">Отправить SMS для привязки</button>
-        <p id="linkPhoneMessage" class="status" role="status" aria-live="polite"></p>
-      </form>
-      <form id="linkVerifyForm" hidden>
-        <label class="field" for="linkCode">Код из SMS</label>
-        <input id="linkCode" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{4,8}" required>
-        <label class="field" for="linkPassword">Новый пароль (10–72 символа)</label>
-        <input id="linkPassword" type="password" minlength="10" maxlength="72" autocomplete="new-password" required>
-        <button id="linkVerifyButton" type="submit" class="btn full">Подтвердить телефон и пароль</button>
-        <p id="linkVerifyMessage" class="status" role="status" aria-live="polite"></p>
-      </form>
+    <section id="phoneOptions" class="card" hidden>
+      <h2>Кто может мне звонить?</h2>
+      <p>Вы можете скрыть или открыть свой номер для других одобренных пользователей DAapp. Номер не подтверждён SMS.</p>
+      <div class="checkrow">
+        <input id="publicPhoneToggle" type="checkbox">
+        <label for="publicPhoneToggle">Показывать мой номер телефона в справочнике</label>
+      </div>
+      <button id="savePhoneToggle" class="btn alt block" type="button">Сохранить настройки телефона</button>
+      <p id="phoneMessage" class="message" role="status" aria-live="polite"></p>
     </section>
   </section>
-  <footer style="margin-top:30px;text-align:center;font-size:.77rem;color:#718478"><a href="../client-app/">Карта Шиели</a> · <a href="../diagnostics/">Диагностика</a></footer>
+  <footer><a href="../client-app/">Карта Шиели</a> · <a href="../directory-app/">Контакты</a> · <a href="../diagnostics/">Диагностика</a></footer>
 </main>
 <script type="module">
 const $=id=>document.getElementById(id);
-const set=(id,msg)=>{$(id).textContent=msg};
+const say=(id,value)=>{$(id).textContent=value};
 const next=new URLSearchParams(location.search).get('next');
-let supabase,helpers,activeId=null,pendingSignup=null,pendingLinkPhone=null,revision=0;
-
-function changeTab(tab){
-  $('loginPanel').hidden=tab!=='login';
-  $('signupPanel').hidden=tab!=='signup';
-  $('loginTab').setAttribute('aria-pressed',String(tab==='login'));
+let supabase,authHelpers,registrationHelpers,sessionUser=null,epoch=0;
+function switchTab(tab) {
   $('signupTab').setAttribute('aria-pressed',String(tab==='signup'));
+  $('loginTab').setAttribute('aria-pressed',String(tab==='login'));
+  $('signupPanel').hidden=tab!=='signup';
+  $('loginPanel').hidden=tab!=='login';
 }
-$('loginTab').addEventListener('click',()=>changeTab('login'));
-$('signupTab').addEventListener('click',()=>changeTab('signup'));
-
-function showIdentityView(session) {
-  const user=session?.user||null;
-  if(activeId===user?.id) return;
-  activeId=user?.id||null;
-  const version=++revision;
-  $('guestPanel').hidden=!!user;
-  $('memberPanel').hidden=!user;
-  $('continueLink').href=helpers.NEXT_DESTINATIONS[helpers.safeDestination(next)];
-  if(user) void refreshMembership(user,version);
-  else {
-    pendingSignup=null; pendingLinkPhone=null;
-    $('smsPanel').hidden=true;
-    set('memberMessage','');
-  }
-}
-async function refreshMembership(user,version) {
-  set('memberMessage','Проверяем ваш аккаунт…');
-  try {
-    const checks=await Promise.all([
-      supabase.from('daapp_member_accounts')
-        .select('username,age_at_registration').maybeSingle(),
-      supabase.from('driver_registrations')
-        .select('review_status').maybeSingle(),
-      supabase.from('place_submissions')
-        .select('status').order('created_at',{ascending:false}).limit(50)
-    ]);
-    if(revision!==version || activeId!==user.id) return;
-    const account=checks[0].error?null:checks[0].data;
-    const driver=checks[1].error?null:checks[1].data;
-    const businesses=checks[2].error?[]:(checks[2].data||[]);
-    $('memberIdentifier').textContent=account?.username
-      ? 'Логин: '+account.username
-      : user.phone ? 'Телефон: '+user.phone : user.email ? 'E-mail: '+user.email : 'Аккаунт';
-    $('driverRoleStatus').textContent=driver?.review_status==='approved'
-      ? 'Подтверждён · функции водителя доступны'
-      : driver?.review_status==='pending'
-        ? 'Анкета ожидает проверки'
-        : driver?.review_status==='rejected' ? 'Заявка отклонена'
-        : 'Анкета не подана';
-    $('businessRoleStatus').textContent=businesses.some(x=>x.status==='approved')
-      ? 'Есть подтверждённая организация'
-      : businesses.some(x=>x.status==='pending') ? 'Заявка на проверке'
-        : 'Пока нет подтверждённой организации';
-    // Account page remains accessible to previously existing email-only users.
-    $('completeProfilePanel').hidden=Boolean(account) || !user.phone_confirmed_at;
-    $('linkPhonePanel').hidden=Boolean(user.phone_confirmed_at);
-    if(!account && user.phone_confirmed_at) {
-      $('completeUsername').value=pendingSignup?.username||'';
-      $('completeAge').value=pendingSignup?.age||'';
-    }
-    set('memberMessage',checks[0].error
-      ? 'Таблица логинов не подключена (SQL 008). Старые функции DAapp по-прежнему доступны.'
-      : 'Один аккаунт для всех приложений. Статусы водителя и бизнеса независимы.');
-  } catch {
-    if(revision===version)set('memberMessage','Не удалось загрузить все статусы. Повторите позже.');
-  }
-}
-
-$('loginForm').addEventListener('submit',async(event)=>{
-  event.preventDefault();
-  $('loginButton').disabled=true;set('loginMessage','Проверяем данные…');
-  try {
-    // Endpoint always points at the project's Edge Function, not a public username list.
-    const result=await helpers.signInAccount(supabase,$('loginId').value,
-      $('loginPassword').value,{usernameEndpoint:'https://huajxbmapmlprcyytsvu.supabase.co/functions/v1/daapp-username-login'});
-    set('loginMessage',result.error||'Вход выполнен. Добро пожаловать!');
-    if(result.success) await showFreshSession();
-  } catch {set('loginMessage','Не удалось войти. Проверьте подключение.');}
-  finally {$('loginButton').disabled=false;$('loginPassword').value='';}
+$('signupTab').addEventListener('click',()=>switchTab('signup'));
+$('loginTab').addEventListener('click',()=>switchTab('login'));
+$('signupAge').addEventListener('input',()=>{
+  if(Number($('signupAge').value)<18) {
+    $('signupPublishPhone').checked=false;
+    $('signupPublishPhone').disabled=true;
+  } else $('signupPublishPhone').disabled=false;
+});
+$('signupAvatar').addEventListener('change',()=>{
+  const file=$('signupAvatar').files?.[0];
+  if(file)say('signupMessage',file.size>1572864
+    ? 'Фото больше 1,5 МБ. Выберите файл поменьше.'
+    : 'Фото выбрано. После подтверждения почты нужно прикрепить его в личном кабинете.');
 });
 $('signupForm').addEventListener('submit',async(event)=>{
   event.preventDefault();
-  if($('signupPassword').value!==$('signupPasswordAgain').value){
-    set('signupMessage','Пароли не совпадают.');return;
-  }
-  $('signupButton').disabled=true;set('signupMessage','Создаём аккаунт и отправляем SMS…');
-  try {
-    const result=await helpers.registerWithPhone(supabase,{
-      username:$('signupUsername').value,phone:$('signupPhone').value,
-      age:$('signupAge').value,password:$('signupPassword').value
-    });
-    if(result.error){set('signupMessage',result.error);return;}
-    pendingSignup=result;
-    $('pendingPhone').textContent=result.phone;
-    $('smsPanel').hidden=false;
+  $('signupButton').disabled=true;
+  say('signupMessage','Создаём заявку и отправляем письмо…');
+  try{
+    const res=await registrationHelpers.submitEmailRegistration(supabase,{
+      username:$('signupUsername').value,email:$('signupEmail').value,
+      phone:$('signupPhone').value,age:$('signupAge').value,
+      residency:$('signupResidency').value,
+      publishPhone:$('signupPublishPhone').checked,
+      password:$('signupPassword').value,confirmPassword:$('signupPasswordAgain').value
+    },new URL('./',location.href).href);
+    if(res.error){say('signupMessage',res.error);return;}
     $('signupPassword').value='';$('signupPasswordAgain').value='';
-    set('signupMessage','SMS отправлено. Введите код ниже.');
-  }catch{set('signupMessage','Ошибка сети. Попробуйте позже.');}
+    say('signupMessage','Заявка создана. Проверьте почту, подтвердите e-mail и дождитесь одобрения администратора. После подтверждения добавьте аватар.');
+    if(res.hasSession) {
+      say('signupMessage','Аккаунт создан, но подтверждение почты обязательно для одобрения. Включите Confirm email в настройках Supabase.');
+      await reloadAuthenticatedUser();
+    }
+  }catch{say('signupMessage','Не удалось зарегистрироваться. Проверьте интернет и SQL 009.');}
   finally{$('signupButton').disabled=false;}
 });
-$('smsForm').addEventListener('submit',async(event)=>{
+$('loginForm').addEventListener('submit',async(event)=>{
   event.preventDefault();
-  $('smsButton').disabled=true;set('smsMessage','Проверяем SMS…');
-  try {
-    if(!pendingSignup){set('smsMessage','Сначала заполните регистрацию.');return;}
-    const result=await helpers.verifyPhoneAndClaim(supabase,pendingSignup,$('smsCode').value);
-    if(result.error){
-      set('smsMessage',result.error+' Если телефон уже подтверждён, сохраните логин в кабинете.');
+  $('loginButton').disabled=true;say('loginMessage','Проверяем логин и пароль…');
+  const input=$('loginIdentifier').value.trim();
+  try{
+    let result;
+    if(input.includes('@')){
+      const {error}=await supabase.auth.signInWithPassword({
+        email:input,password:$('loginPassword').value
+      });
+      result=error?{error:'Неверный e-mail или пароль. Подтвердите адрес в письме.'}:{success:true};
     }else{
-      set('smsMessage','Телефон подтверждён, логин закреплён.');
-      $('smsPanel').hidden=true;pendingSignup=null;
+      result=await authHelpers.signInAccount(supabase,input,$('loginPassword').value,{
+        usernameEndpoint:'https://huajxbmapmlprcyytsvu.supabase.co/functions/v1/daapp-username-login'
+      });
     }
-    await showFreshSession();
-  }catch{set('smsMessage','Не удалось подтвердить номер. Проверьте код.');}
-  finally{$('smsButton').disabled=false;}
+    say('loginMessage',result.error||'Вход выполнен. Проверяем одобрение аккаунта…');
+    if(result.success)await reloadAuthenticatedUser();
+  }catch{say('loginMessage','Ошибка соединения с сервером входа.');}
+  finally{$('loginButton').disabled=false;$('loginPassword').value='';}
 });
-$('emailForm').addEventListener('submit',async(event)=>{
-  event.preventDefault();$('emailButton').disabled=true;set('emailMessage','Отправляем письмо…');
-  try{
-    const {error}=await supabase.auth.signInWithOtp({
-      email:$('legacyEmail').value.trim(),
-      options:{emailRedirectTo:new URL('./?next='+encodeURIComponent(helpers.safeDestination(next)),location.href).href,shouldCreateUser:false}
-    });
-    set('emailMessage',error?'Вход недоступен. Проверьте email и настройки почты.':'Ссылка отправлена. Откройте письмо.');
-  }catch{set('emailMessage','Не удалось отправить письмо.');}
-  finally{$('emailButton').disabled=false;}
+async function reloadAuthenticatedUser() {
+  const {data,error}=await supabase.auth.getUser();
+  if(error)throw error;
+  await displayAccount(data?.user||null);
+}
+async function displayAccount(user) {
+  sessionUser=user;
+  const current=++epoch;
+  $('guestPanel').hidden=!!user;
+  $('memberPanel').hidden=!user;
+  if(!user)return;
+  say('memberEmail',user.email||'');
+  say('decisionStatus','Загружаем статус одобрения…');
+  $('approvedLinks').hidden=true;
+  $('phoneOptions').hidden=true;
+  $('avatarPanel').hidden=true;
+  const [decision,membership]=await Promise.all([
+    registrationHelpers.accountDecision(supabase),
+    supabase.from('daapp_member_accounts').select('username,age_at_registration').maybeSingle()
+  ]);
+  if(current!==epoch||sessionUser?.id!==user.id)return;
+  if(decision.error) {
+    $('decisionStatus').dataset.status='rejected';
+    say('decisionStatus','Регистрация пока недоступна: нужно выполнить SQL 009 в Supabase.');
+    say('memberInfo',decision.error);
+    return;
+  }
+  const username=membership.data?.username||user.email||'Пользователь';
+  say('welcome',username);
+  const status=decision.status||'pending';
+  $('decisionStatus').dataset.status=status;
+  say('decisionStatus',status==='approved'?'Аккаунт одобрен. Добро пожаловать в DAapp!'
+    :status==='pending'?'Заявка ожидает проверки администратора. Сервисы пока закрыты.'
+    :'Заявка отклонена администратором.');
+  say('memberInfo',decision.legacy?'Вы зарегистрировались до введения проверки аккаунтов.'
+    :('Тип: '+(decision.residency==='resident'?'житель':decision.residency==='guest'?'гость':'не выбран')+
+      '. Номер для связи: '+(decision.phone_number||'не указан')+
+      '. SMS пока не используется.'));
+  $('approvedLinks').hidden=status!=='approved';
+  $('continueLink').href=authHelpers.NEXT_DESTINATIONS[authHelpers.safeDestination(next)];
+  $('avatarPanel').hidden=!user.email_confirmed_at || Boolean(decision.legacy);
+  $('phoneOptions').hidden=status!=='approved'||decision.legacy||
+    Number(membership.data?.age_at_registration)<18;
+  $('publicPhoneToggle').checked=Boolean(decision.public_phone);
+  $('currentAvatar').hidden=true;
+  const url=registrationHelpers.avatarPublicUrl(supabase,decision.avatar_path);
+  if(url){$('currentAvatar').src=url;$('currentAvatar').hidden=false;}
+}
+$('refreshAccount').addEventListener('click',()=>{
+  if(sessionUser)void reloadAuthenticatedUser().catch(()=>say('decisionStatus','Не удалось обновить статус.'));
 });
-$('completeForm').addEventListener('submit',async(event)=>{
-  event.preventDefault();$('completeButton').disabled=true;set('completeMessage','Сохраняем логин…');
-  try {
-    const result=await helpers.claimUsername(supabase,$('completeUsername').value,$('completeAge').value);
-    set('completeMessage',result.error||'Логин сохранён!');
-    if(!result.error) await refreshUser();
-  }catch{set('completeMessage','Не удалось сохранить логин.');}
-  finally{$('completeButton').disabled=false;}
-});
-$('linkPhoneForm').addEventListener('submit',async(event)=>{
+$('avatarForm').addEventListener('submit',async(event)=>{
   event.preventDefault();
-  const phone=helpers.normalizePhone($('linkPhone').value);
-  if(!phone){set('linkPhoneMessage','Укажите правильный номер +7.');return;}
-  $('linkPhoneButton').disabled=true;set('linkPhoneMessage','Отправляем SMS…');
+  if(!sessionUser)return;
+  $('avatarButton').disabled=true;say('avatarMessage','Загружаем фотографию…');
   try{
-    const {error}=await supabase.auth.updateUser({phone});
-    if(error){set('linkPhoneMessage','Не удалось начать подтверждение. Возможно, номер уже используется.');return;}
-    pendingLinkPhone=phone;
-    $('linkVerifyForm').hidden=false;
-    set('linkPhoneMessage','Введите SMS-код для привязки.');
-  }catch{set('linkPhoneMessage','Ошибка сети. Попробуйте позже.');}
-  finally{$('linkPhoneButton').disabled=false;}
+    const result=await registrationHelpers.uploadAvatar(supabase,
+      sessionUser.id,$('avatarFile').files?.[0]);
+    say('avatarMessage',result.error||'Аватар сохранён.');
+    if(result.path)await reloadAuthenticatedUser();
+  }catch{say('avatarMessage','Ошибка загрузки. Попробуйте другой файл.');}
+  finally{$('avatarButton').disabled=false;}
 });
-$('linkVerifyForm').addEventListener('submit',async(event)=>{
-  event.preventDefault();
-  $('linkVerifyButton').disabled=true;set('linkVerifyMessage','Подтверждаем телефон…');
+$('savePhoneToggle').addEventListener('click',async()=>{
+  $('savePhoneToggle').disabled=true;say('phoneMessage','Сохраняем настройку…');
   try{
-    if(!pendingLinkPhone) {set('linkVerifyMessage','Сначала запросите SMS.');return;}
-    const {error}=await supabase.auth.verifyOtp({
-      phone:pendingLinkPhone,token:$('linkCode').value.trim(),type:'phone_change'
-    });
-    if(error){set('linkVerifyMessage','Неверный или истёкший SMS-код.');return;}
-    const password=$('linkPassword').value;
-    if(password.length<10||password.length>72){
-      set('linkVerifyMessage','Пароль: от 10 до 72 символов.');return;
-    }
-    const change=await supabase.auth.updateUser({password});
-    $('linkPassword').value='';
-    if(change.error){set('linkVerifyMessage','Телефон подтверждён, но пароль пока не обновлён. Повторите действие после повторного входа.');return;}
-    set('linkVerifyMessage','Телефон подтверждён и пароль установлен. Теперь закрепите логин ниже.');
-    await refreshUser();
-  }catch{set('linkVerifyMessage','Ошибка сети. Повторите позже.');}
-  finally{$('linkVerifyButton').disabled=false;}
+    const res=await registrationHelpers.updatePublicPhoneConsent(supabase,$('publicPhoneToggle').checked);
+    say('phoneMessage',res.error||'Настройки звонков сохранены.');
+    if(res.success)await reloadAuthenticatedUser();
+  }catch{say('phoneMessage','Не удалось сохранить настройку.');}
+  finally{$('savePhoneToggle').disabled=false;}
 });
 $('logoutButton').addEventListener('click',async()=>{
   $('logoutButton').disabled=true;
   try{
     const {error}=await supabase.auth.signOut();
     if(error)throw error;
-    showIdentityView(null);
-  }catch{set('memberMessage','Не удалось выйти. Попробуйте позже.');}
+    await displayAccount(null);
+  }catch{say('decisionStatus','Ошибка выхода.');}
   finally{$('logoutButton').disabled=false;}
 });
-async function showFreshSession(){
-  const {data,error}=await supabase.auth.getSession();
-  if(error) throw error;
-  if(data?.session?.user) {
-    // Force refresh after claim/status changes to reuse the authenticated hub.
-    activeId=undefined;
-    showIdentityView(data.session);
-  }
-}
-async function refreshUser() {
-  const {data,error}=await supabase.auth.getUser();
-  if(error) throw error;
-  if(data?.user) {
-    activeId=undefined;
-    showIdentityView({user:data.user});
-  }
-}
 try{
-  const [client,api]=await Promise.all([
+  const [mod,helpers,signup]=await Promise.all([
     import('../shared/supabase.js'),
-    import('./auth.js')
+    import('./auth.js'),
+    import('./email-registration.js')
   ]);
-  supabase=client.supabase;helpers=api;
+  supabase=mod.supabase;authHelpers=helpers;registrationHelpers=signup;
   supabase.auth.onAuthStateChange((_event,session)=>{
-    setTimeout(()=>showIdentityView(session),0);
+    setTimeout(()=>{void displayAccount(session?.user||null);},0);
   });
   const {data,error}=await supabase.auth.getSession();
   if(error)throw error;
-  showIdentityView(data.session);
+  await displayAccount(data.session?.user||null);
 }catch(error){
-  console.warn('DAapp account initialization unavailable',error?.code||'network');
-  set('loginMessage','Сервис авторизации недоступен. Проверьте подключение.');
-  $('loginButton').disabled=true;
-  $('signupButton').disabled=true;
+  console.warn('DAapp email registration could not start',error?.code||'network');
+  $('signupButton').disabled=true;$('loginButton').disabled=true;
+  say('signupMessage','Не удалось подключиться к Supabase. Проверьте интернет.');
 }
 </script>
 </body>

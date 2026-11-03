@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#176449"><title>DAapp — Контакты жителей</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#193b2b;background:#f4f7f4}
+*{box-sizing:border-box}body{margin:0}main{max-width:660px;margin:auto;padding:20px 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:1.7rem;font-weight:800;letter-spacing:-.05em}
+a{color:#175c44;text-decoration:none}h1{margin:24px 0 7px;font-size:1.7rem}
+p{color:#6a8071;line-height:1.5;font-size:.88rem}
+.card{border:1px solid #e2eae5;border-radius:17px;background:#fff;padding:18px;margin:11px 0}
+.person{display:flex;gap:13px;align-items:center}.portrait{width:60px;height:60px;object-fit:cover;border-radius:50%;background:#e7f0e8}
+.personName{font-size:1.03rem;font-weight:750;overflow-wrap:anywhere}
+.call{display:inline-block;margin-top:9px;padding:10px 16px;border-radius:10px;background:#176449;color:#fff;font-weight:700}
+.note{background:#eef5ef;border-radius:12px;padding:13px;color:#3c664c}
+[hidden]{display:none!important}
+</style></head>
+<body><main>
+<header><a class="logo" href="../client-app/">DAapp.</a><span style="font-size:.8rem">Шиели · Контакты</span></header>
+<h1>Контакты пользователей</h1>
+<p>Здесь показаны только взрослые одобренные пользователи, которые сами разрешили публиковать свой номер телефона. Для просмотра нужно войти в DAapp.</p>
+<p class="note">Номера указаны самими пользователями и пока не проверяются через SMS. Никогда не сообщайте незнакомцам коды подтверждения или пароли.</p>
+<p id="directoryStatus" role="status">Загружаем контакты…</p>
+<div id="directoryList" aria-label="Контакты пользователей"></div>
+<p id="authLink" hidden><a href="../account-app/">Войти или зарегистрироваться, чтобы увидеть контакты</a></p>
+<p style="margin-top:28px"><a href="../account-app/">Мой аккаунт и настройки видимости номера</a></p>
+</main>
+<script type="module">
+const list=document.getElementById('directoryList');
+const status=document.getElementById('directoryStatus');
+const link=document.getElementById('authLink');
+try{
+  const {supabase}=await import('../shared/supabase.js');
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError||!user){
+    status.textContent='Войдите в свой аккаунт, чтобы открыть справочник.';
+    link.hidden=false;
+  }else{
+    const {data,error}=await supabase.rpc('daapp_public_member_directory',{p_limit:75});
+    if(error){
+      status.textContent='Справочник недоступен. Требуется одобрение аккаунта и настройка SQL 009.';
+    }else{
+      const members=Array.isArray(data)?data:[];
+      status.textContent=members.length
+        ?'Доступно контактов: '+members.length
+        :'Пока никто не открыл свой номер для звонков.';
+      for(const entry of members){
+        if(!/^[+]7[0-9]{10}$/.test(String(entry.phone_number||'')))continue;
+        const card=document.createElement('div');card.className='card person';
+        if(entry.avatar_path && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|jpeg|png|webp)$/i.test(entry.avatar_path)){
+          const picture=document.createElement('img');
+          picture.className='portrait';picture.alt='Аватар пользователя';
+          const {data:img}=supabase.storage.from('daapp-avatars').getPublicUrl(entry.avatar_path);
+          if(img?.publicUrl){picture.src=img.publicUrl;card.append(picture);}
+        }
+        const details=document.createElement('div');
+        const name=document.createElement('div');name.className='personName';
+        name.textContent=String(entry.username||'Пользователь');
+        const phone=document.createElement('div');phone.textContent=entry.phone_number;
+        const dial=document.createElement('a');dial.className='call';
+        dial.href='tel:'+entry.phone_number;
+        dial.textContent='Позвонить';
+        details.append(name,phone,dial);card.append(details);list.append(card);
+      }
+    }
+  }
+}catch{
+  status.textContent='Не удалось загрузить контакты. Проверьте соединение с Supabase.';
+}
+</script>
+</body></html>
