@@ -7,8 +7,10 @@ begin;
 do $$
 begin
   if to_regclass('public.profiles') is null or
-     to_regclass('public.daapp_admins') is null then
-    raise exception 'Apply 001 profiles and 006 daapp_admins first';
+     to_regclass('public.daapp_admins') is null or
+     to_regclass('public.place_submissions') is null or
+     to_regclass('public.driver_registrations') is null then
+    raise exception 'Apply migrations 001 through 007 first (including driver registrations).';
   end if;
   if to_regclass('public.daapp_account_applications') is not null then
     raise exception 'DAapp 009 already installed; do not execute twice';
