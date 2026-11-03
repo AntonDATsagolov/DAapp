@@ -17,7 +17,9 @@ create table auth.users (
   id uuid primary key,
   email text unique,
   phone text,
-  phone_confirmed_at timestamptz
+  phone_confirmed_at timestamptz,
+  email_confirmed_at timestamptz,
+  raw_user_meta_data jsonb not null default '{}'::jsonb
 );
 
 -- Supabase auth.uid() derives the caller from the verified JWT.
