@@ -509,6 +509,7 @@ test('Profile can load, save only permitted fields, clear, and handle missing ro
 
   const fakeSupabase = {
     async rpc(name, args) {
+      if (name === 'daapp_account_approved') return { data: true, error: null };
       assert.equal(name, 'daapp_ensure_own_profile');
       assert.equal(args, undefined, 'Do not pass user ID or role to RPC');
       rpcCalls++;
