@@ -60,6 +60,11 @@
     <p id="authMessage" class="message" role="status" aria-live="polite">Проверяем вход…</p>
   </section>
 
+  <section id="approvalPanel" class="panel" hidden>
+    <h2>Ожидается одобрение аккаунта</h2>
+    <p id="approvalMessage">Проверяем регистрацию…</p>
+    <p><a href="../account-app/?next=business">Открыть мой аккаунт и статус заявки</a></p>
+  </section>
   <section id="appPanel" hidden>
     <div class="panel">
       <h2>Новая заявка</h2>
@@ -123,13 +128,34 @@
     userId = newId;
     sessionVersion++;
     authPanel.hidden = Boolean(user);
-    appPanel.hidden = !user;
+    appPanel.hidden = true;
+    el('approvalPanel').hidden = !user;
+    el('approvalMessage').textContent = 'Проверяем одобрение администратора…';
     el('accountText').textContent = user?.email || '';
     submissionList.replaceChildren();
     submitMessage.textContent = '';
     listMessage.textContent = '';
-    if (user) void refreshSubmissions();
-    else el('authMessage').textContent = 'Введите e-mail для входа.';
+    if (user) {
+      const version = sessionVersion;
+      void (async () => {
+        try {
+          const {data,error}=await client.rpc('daapp_account_approved');
+          if (version!==sessionVersion || userId!==user.id) return;
+          // Earlier deployments did not have SQL 009; do not break old users.
+          if (error && error.code!=='PGRST202') throw error;
+          if (!error && data!==true) {
+            el('approvalMessage').textContent='Регистрация ещё не одобрена. Дождитесь решения администратора.';
+            return;
+          }
+          el('approvalPanel').hidden=true;
+          appPanel.hidden=false;
+          void refreshSubmissions();
+        } catch {
+          if (version===sessionVersion)
+            el('approvalMessage').textContent='Не удалось проверить доступ. Повторите позже.';
+        }
+      })();
+    } else el('authMessage').textContent = 'Введите e-mail для входа.';
   }
 
   async function refreshSubmissions() {
