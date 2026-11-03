@@ -66,6 +66,8 @@ end $$;
 reset role;
 
 -- Unconfirmed email must not upload files, even with valid user-owned path.
+set role authenticated;
+set request.jwt.claim.sub='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 do $$
 begin
  begin
@@ -134,6 +136,8 @@ select public.daapp_set_phone_visibility(true);
 reset role;
 
 -- Confirmed owners can upload ONLY to own path and permitted formats.
+set role authenticated;
+set request.jwt.claim.sub='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 insert into storage.objects(bucket_id,name) values(
   'daapp-avatars',
   'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png');
