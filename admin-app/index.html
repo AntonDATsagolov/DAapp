@@ -145,6 +145,13 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
         </div>
       </section>
     </div>
+    <section class="card" aria-label="Подтверждение новых пользователей">
+      <h2>Новые пользователи DAapp</h2>
+      <p>Пользователь заполняет логин, пароль, e-mail, телефон, возраст и выбирает статус жителя или гостя. После подтверждения e-mail его заявку нужно одобрить вручную. Номер не подтверждается SMS, а его публикация требует отдельного согласия.</p>
+      <button id="refreshAccounts" class="btn alt" type="button">Обновить заявки пользователей</button>
+      <p id="accountQueueStatus" class="status" role="status" aria-live="polite">Проверяем регистрации…</p>
+      <div id="accountQueue" class="driver-queue" aria-label="Заявки новых пользователей"></div>
+    </section>
     <section class="card" aria-label="Проверка водителей">
       <h2>Заявки водителей Шиели</h2>
       <p>Проверяйте личность, водительское удостоверение, автомобиль и право на перевозки до допуска к линии. Подача заявки не даёт права принимать заказы.</p>
@@ -158,7 +165,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
 <script type="module">
   const $ = (id) => document.getElementById(id);
   const loginPanel = $('loginPanel'), accessPanel = $('accessPanel'), adminPanel = $('adminPanel');
-  let client, readChecks, activeUserId, epoch = 0, selected = null, queue = [], busy = false, driverBusy = false;
+  let client, readChecks, memberModerator, activeUserId, epoch = 0, selected = null, queue = [], busy = false, driverBusy = false;
   const categoryNames = { shop:'Магазин', cafe:'Кафе', beauty:'Красота', hotel:'Гостиница', taxi:'Такси' };
 
   function showState(state) {
@@ -239,6 +246,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       if (error) throw error;
       if (stamp !== epoch || uid !== activeUserId) return;
       $('driverQueue').replaceChildren();
+    if (memberModerator) memberModerator.reset(null);
       const list = Array.isArray(data) ? data : [];
       $('driverQueueStatus').textContent = list.length
         ? 'Ожидают проверки: ' + list.length
@@ -354,6 +362,10 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
         return;
       }
       showState('admin');
+      if (memberModerator) {
+        memberModerator.reset(user.id);
+        void memberModerator.refresh();
+      }
       void loadQueue();
       void loadDriverQueue();
     } catch (error) {
@@ -462,11 +474,16 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
   }
 
   try {
-    const [{supabase}, {runAdminReadChecks}] = await Promise.all([
-      import('../shared/supabase.js'), import('./checks.js')
+    const [{supabase}, {runAdminReadChecks}, {createAccountModerator}] = await Promise.all([
+      import('../shared/supabase.js'), import('./checks.js'), import('./accounts.js')
     ]);
     client = supabase;
     readChecks = runAdminReadChecks;
+    memberModerator = createAccountModerator(client,{
+      list:$('accountQueue'),
+      status:$('accountQueueStatus'),
+      refreshButton:$('refreshAccounts')
+    });
     client.auth.onAuthStateChange((_event,session) =>
       setTimeout(() => { void showSession(session); },0));
     const { data,error } = await client.auth.getSession();
@@ -491,6 +508,9 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
     });
     $('refreshButton').addEventListener('click',()=>{ void loadQueue(); });
     $('refreshDrivers').addEventListener('click',()=>{ void loadDriverQueue(); });
+    $('refreshAccounts').addEventListener('click',()=>{
+      if(memberModerator)void memberModerator.refresh();
+    });
     $('systemCheckButton').addEventListener('click',()=>{ void runSystemCheck(); });
     $('approveForm').addEventListener('submit',(event)=>{
       event.preventDefault(); void review('approved');
