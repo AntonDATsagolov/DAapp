@@ -65,6 +65,19 @@ begin
 end $$;
 reset role;
 
+-- Unconfirmed email must not upload files, even with valid user-owned path.
+do $$
+begin
+ begin
+  insert into storage.objects(bucket_id,name) values(
+    'daapp-avatars',
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.webp');
+  raise exception 'Unconfirmed email bypassed upload restriction';
+ exception when insufficient_privilege then null;
+ end;
+end $$;
+reset role;
+
 \echo 'Registration: only trusted admin may review and approval needs email confirmation'
 set role authenticated;
 set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -118,6 +131,29 @@ begin
  end if;
 end $$;
 select public.daapp_set_phone_visibility(true);
+reset role;
+
+-- Confirmed owners can upload ONLY to own path and permitted formats.
+insert into storage.objects(bucket_id,name) values(
+  'daapp-avatars',
+  'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png');
+do $$
+begin
+ begin
+  insert into storage.objects(bucket_id,name) values(
+    'daapp-avatars',
+    'ffffffff-ffff-4fff-8fff-ffffffffffff/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.webp');
+  raise exception 'User uploaded another account avatar';
+ exception when insufficient_privilege then null;
+ end;
+ begin
+  insert into storage.objects(bucket_id,name) values(
+    'daapp-avatars',
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.svg');
+  raise exception 'Unsupported avatar extension allowed';
+ exception when insufficient_privilege then null;
+ end;
+end $$;
 reset role;
 
 \echo 'Registration: under-age accounts must never publish a contact number'
