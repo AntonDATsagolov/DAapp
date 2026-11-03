@@ -46,7 +46,7 @@ grant select (user_id, username, age_at_registration, registered_at)
 create table public.daapp_account_applications (
   user_id uuid primary key references auth.users(id) on delete cascade,
   phone_number text check (phone_number is null or
-    phone_number ~ '^\\+7[0-9]{10}$'),
+    phone_number ~ '^[+]7[0-9]{10}$'),
   residency text check (residency in ('resident','guest')),
   public_phone boolean not null default false,
   avatar_path text,
@@ -81,7 +81,7 @@ begin
     v_phone := coalesce(v_meta->>'phone','');
     v_residency := coalesce(v_meta->>'residency','');
     if v_username !~ '^[a-z][a-z0-9_]{3,23}$'
-       or v_phone !~ '^\\+7[0-9]{10}$'
+       or v_phone !~ '^[+]7[0-9]{10}$'
        or v_residency not in ('resident','guest')
        or coalesce(v_meta->>'age','') !~ '^[0-9]{1,3}$' then
       raise exception 'Invalid registration fields';
@@ -174,6 +174,17 @@ revoke all on function public.daapp_set_phone_visibility(boolean)
 grant execute on function public.daapp_set_phone_visibility(boolean)
   to authenticated;
 
+-- Storage policies cannot query auth.users as a browser role directly.
+create function public.daapp_email_confirmed()
+returns boolean language sql stable security definer set search_path=''
+as $
+ select exists(select 1 from auth.users u
+    where u.id=(select auth.uid()) and u.email_confirmed_at is not null);
+$;
+revoke all on function public.daapp_email_confirmed()
+  from public,anon,authenticated;
+grant execute on function public.daapp_email_confirmed() to authenticated;
+
 -- Photos are uploaded only after email confirmation, to a per-user path.
 -- This metadata RPC cannot approve an account or expose the phone.
 create function public.daapp_set_avatar_path(p_path text)
@@ -188,7 +199,7 @@ begin
     raise exception 'Confirmed email required' using errcode='42501';
   end if;
   if p_path is null or p_path !~
-     ('^'||v_uid::text||'/[0-9a-fA-F-]{36}\\.(jpg|jpeg|png|webp)$') then
+     ('^'||v_uid::text||'/[0-9a-fA-F-]{36}[.](jpg|jpeg|png|webp)$') then
     raise exception 'Invalid avatar path' using errcode='22023';
   end if;
   update public.daapp_account_applications
@@ -317,9 +328,8 @@ begin
         bucket_id='daapp-avatars'
         and (storage.foldername(name))[1] = (select auth.uid())::text
         and name ~ ('^'||(select auth.uid())::text||
-          '/[0-9a-fA-F-]{36}\\.(jpg|jpeg|png|webp)$')
-        and exists(select 1 from auth.users u
-          where u.id=(select auth.uid()) and u.email_confirmed_at is not null)
+          '/[0-9a-fA-F-]{36}[.](jpg|jpeg|png|webp)$')
+        and public.daapp_email_confirmed()
       )
    $policy$;
  end if;
