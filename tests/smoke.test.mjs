@@ -415,29 +415,28 @@ test('Driver SQL 007 keeps private data in RLS and allows only reviewed drivers 
   assert.ok(!html.includes('innerHTML'));
 });
  
-test('Unified member UI has phone/password signup, verified SMS and legacy migration', () => {
+test('Email signup requires admin approval and opt-in phone, while old phone migration is retained', () => {
   const html=read('account-app/index.html');
   const script=html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script);
   assert.doesNotThrow(()=>new AsyncFunction(script));
-  for(const id of ['signupForm','signupUsername','signupPhone','signupPassword','signupAge',
-                   'smsForm','smsCode','loginForm','linkPhoneForm','linkVerifyForm','memberPanel']) {
+  for (const id of ['signupForm','signupUsername','signupEmail','signupPhone',
+    'signupPassword','signupAge','signupResidency','signupAvatar',
+    'signupPublishPhone','loginForm','decisionStatus','memberPanel']) {
     assert.ok(html.includes('id="'+id+'"'),id);
   }
-  assert.ok(html.includes("import('./auth.js')"));
-  assert.ok(html.includes('phone_change'));
-  const sql=read('supabase/migrations/008_unified_member_accounts.sql');
-  assert.ok(sql.includes('create table public.daapp_member_accounts'));
-  assert.ok(sql.includes('phone_confirmed_at'));
-  assert.ok(sql.includes("auth.uid()"));
-  assert.ok(sql.includes('enable row level security'));
-  assert.ok(sql.includes('grant execute on function public.daapp_claim_username'));
-  assert.ok(!sql.includes('grant select on public.daapp_member_accounts to anon'));
-  assert.ok(!sql.includes('alter table public.profiles'));
-  const fn=read('supabase/functions/daapp-username-login/index.ts');
-  assert.ok(fn.includes("getUserById"));
-  assert.ok(fn.includes("signInWithPassword"));
-  assert.ok(fn.includes("Invalid credentials"));
+  assert.ok(html.includes("import('./email-registration.js')"));
+  assert.ok(!html.includes('smsForm'));
+  const sql=read('supabase/migrations/009_email_approval_directory.sql');
+  assert.ok(sql.includes('create table public.daapp_account_applications'));
+  assert.ok(sql.includes('daapp_new_user_application'));
+  assert.ok(sql.includes('daapp_admin_review_account'));
+  assert.ok(sql.includes('daapp_account_approved'));
+  assert.ok(sql.includes('public_phone'));
+  assert.ok(sql.includes('as restrictive for all'));
+  assert.ok(sql.includes('email_confirmed_at'));
+  assert.ok(sql.includes('daapp_avatar_upload_self'));
+  assert.ok(!sql.includes('grant update on public.daapp_account_applications'));
   assert.ok(!html.includes('SUPABASE_SERVICE_ROLE_KEY'));
 });
 
