@@ -90,7 +90,7 @@ begin
     if v_age not between 13 and 120 then
       raise exception 'Invalid registration age';
     end if;
-    v_public_phone := coalesce((v_meta->>'publish_phone')::boolean,false);
+    v_public_phone := v_age>=18 and coalesce((v_meta->>'publish_phone')::boolean,false);
     insert into public.daapp_member_accounts(user_id,username,age_at_registration)
       values (new.id,v_username,v_age);
     insert into public.daapp_account_applications
@@ -161,6 +161,13 @@ begin
   end if;
   if p_public is null then
     raise exception 'Invalid visibility' using errcode='22023';
+  end if;
+  if p_public and not exists(
+    select 1 from public.daapp_member_accounts m
+    where m.user_id=(select auth.uid()) and m.age_at_registration>=18
+  ) then
+    raise exception 'Public phone listing requires adult account'
+      using errcode='42501';
   end if;
   update public.daapp_account_applications
      set public_phone=p_public where user_id=(select auth.uid())
@@ -301,7 +308,7 @@ begin
     select r.user_id,m.username,r.phone_number,r.avatar_path
     from public.daapp_account_applications r
     join public.daapp_member_accounts m on m.user_id=r.user_id
-    where r.status='approved' and r.public_phone=true and r.phone_number is not null
+    where r.status='approved' and r.public_phone=true and r.phone_number is not null and m.age_at_registration>=18
     order by m.username asc limit least(greatest(coalesce(p_limit,50),1),100);
 end;
 $$;
