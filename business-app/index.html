@@ -31,6 +31,19 @@
     .submission-title{display:block;font-size:.91rem;font-weight:800;color:#183b2b}
     .submission-meta{font-size:.75rem;color:#647f70;margin-top:6px;overflow-wrap:anywhere}
     .submission-status{display:inline-block;font-size:.71rem;padding:5px 9px;margin-top:8px;border-radius:10px;background:#e8eee9;color:#325846;font-weight:760}
+.work-place{padding:15px;border:1px solid #dfe9e1;background:#f8fbf8;border-radius:14px;margin:12px 0}
+    .work-place strong{display:block;font-size:.94rem;color:#203e2e;margin-bottom:5px}
+    .work-place p{margin:4px 0 12px;font-size:.78rem}
+    .work-switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .work-switch-row .state-text{font-weight:800;font-size:.83rem;color:#40604e}
+    .work-switch{position:relative;display:inline-flex;align-items:center;cursor:pointer;margin:0!important}
+    .work-switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+    .work-switch .track{display:block;width:58px;height:34px;border-radius:999px;background:#9aa9a0;transition:background .15s}
+    .work-switch .track::after{content:'';position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #1233;transition:transform .15s}
+    .work-switch input:checked+.track{background:#18844f}
+    .work-switch input:checked+.track::after{transform:translateX(24px)}
+    .work-switch input:focus-visible+.track{outline:3px solid #8bcdaa;outline-offset:3px}
+    .work-switch input:disabled+.track{opacity:.55;cursor:wait}
     .footer{margin-top:27px;text-align:center;font-size:.82rem}.footer a{color:#176448}
     [hidden]{display:none!important}
     @media(min-width:720px){main{padding:35px 25px 80px}.panel{padding:26px 29px}h1{font-size:2rem}}
@@ -66,6 +79,13 @@
     <p><a href="../account-app/?next=business">Открыть мой аккаунт и статус заявки</a></p>
   </section>
   <section id="appPanel" hidden>
+    <section class="panel" id="workPanel" aria-label="Статус работы моих организаций">
+      <h2>На работе / Не на работе</h2>
+      <p>Отметьте, какие ваши подтверждённые организации сейчас работают. Жители увидят этот статус на карте Шиели. Статус меняется вручную, расписание пока не учитывается.</p>
+      <div id="workplacesList"></div>
+      <p id="workStatusMessage" class="message" role="status" aria-live="polite">Проверяем организации…</p>
+      <button id="refreshWorkplaces" class="btn btn-secondary" type="button">Обновить статусы</button>
+    </section>
     <div class="panel">
       <h2>Новая заявка</h2>
       <p id="accountText" class="hint"></p>
@@ -119,7 +139,7 @@
   const submitButton = el('submitButton');
   const submitMessage = el('submitMessage'), listMessage = el('listMessage');
   const submissionList = el('submissionList');
-  let client, actions, userId = undefined, sessionVersion = 0;
+  let client, actions, workApi, userId = undefined, sessionVersion = 0;
 
   function showView(session) {
     const user = session?.user || null;
@@ -133,6 +153,8 @@
     el('approvalMessage').textContent = 'Проверяем одобрение администратора…';
     el('accountText').textContent = user?.email || '';
     submissionList.replaceChildren();
+    el('workplacesList').replaceChildren();
+    el('workStatusMessage').textContent = '';
     submitMessage.textContent = '';
     listMessage.textContent = '';
     if (user) {
@@ -150,12 +172,89 @@
           el('approvalPanel').hidden=true;
           appPanel.hidden=false;
           void refreshSubmissions();
+          void refreshWorkplaces();
         } catch {
           if (version===sessionVersion)
             el('approvalMessage').textContent='Не удалось проверить доступ. Повторите позже.';
         }
       })();
     } else el('authMessage').textContent = 'Введите e-mail для входа.';
+  }
+
+  async function refreshWorkplaces() {
+    if (!client || !workApi || !userId) return;
+    const version = sessionVersion, uid = userId;
+    const box = el('workplacesList'), msg = el('workStatusMessage');
+    msg.textContent = 'Проверяем ваши подтверждённые организации…';
+    box.replaceChildren();
+    try {
+      const workplaces = await workApi.fetchMyWorkplaces(client);
+      if (version !== sessionVersion || uid !== userId) return;
+      if (!workplaces.length) {
+        msg.textContent = 'Подтверждённых организаций пока нет. Подайте заявку и дождитесь публикации администратором.';
+        return;
+      }
+      msg.textContent = 'Управляйте статусом каждой организации отдельно.';
+      for (const item of workplaces) {
+        const card = document.createElement('div');
+        card.className = 'work-place';
+        const name = document.createElement('strong');
+        name.textContent = item.name;
+        const desc = document.createElement('p');
+        desc.textContent = (actions.CATEGORIES[item.category] || 'Организация')+
+          ' · Статус виден всем жителям на карте';
+        const line = document.createElement('div');
+        line.className = 'work-switch-row';
+        const state = document.createElement('span');
+        state.className = 'state-text';
+        const label = document.createElement('label');
+        label.className = 'work-switch';
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.setAttribute('role','switch');
+        toggle.setAttribute('aria-label','На работе: '+item.name);
+        toggle.checked = item.is_working === true;
+        const track = document.createElement('span');
+        track.className = 'track';
+        track.setAttribute('aria-hidden','true');
+        state.textContent = toggle.checked ? 'На работе' : 'Не на работе';
+        label.append(toggle,track);
+        line.append(state,label);
+        const feedback = document.createElement('p');
+        feedback.className = 'message';
+        feedback.setAttribute('role','status');
+        toggle.addEventListener('change', async () => {
+          const desired = toggle.checked;
+          const previous = !desired;
+          toggle.disabled = true;
+          feedback.textContent = 'Сохраняем статус…';
+          try {
+            const result = await workApi.setBusinessWorking(client,item.place_id,desired);
+            if (version !== sessionVersion || uid !== userId) return;
+            if (result.error) {
+              toggle.checked = previous;
+              feedback.textContent = result.error;
+            } else {
+              toggle.checked = result.is_working;
+              feedback.textContent = 'Статус сохранён и будет виден на карте после обновления.';
+            }
+            state.textContent = toggle.checked ? 'На работе' : 'Не на работе';
+          } catch {
+            toggle.checked = previous;
+            state.textContent = previous ? 'На работе' : 'Не на работе';
+            feedback.textContent = 'Не удалось обновить статус. Проверьте интернет.';
+          } finally {
+            toggle.disabled = false;
+          }
+        });
+        card.append(name,desc,line,feedback);
+        box.append(card);
+      }
+    } catch (error) {
+      if (version !== sessionVersion || uid !== userId) return;
+      console.warn('DAapp workplace list error',error?.code||'network');
+      msg.textContent = 'Не удалось проверить статусы организаций. Проверьте SQL 012 и соединение.';
+    }
   }
 
   async function refreshSubmissions() {
@@ -198,9 +297,10 @@
   }
 
   try {
-    [client, actions] = await Promise.all([
+    [client, actions, workApi] = await Promise.all([
       import('../shared/supabase.js').then(x => x.supabase),
-      import('./submissions.js')
+      import('./submissions.js'),
+      import('./work-status.js')
     ]);
     client.auth.onAuthStateChange((_event, session) => {
       setTimeout(() => showView(session), 0);
@@ -258,6 +358,7 @@
     });
 
     el('refreshButton').addEventListener('click', () => { void refreshSubmissions(); });
+    el('refreshWorkplaces').addEventListener('click', () => { void refreshWorkplaces(); });
     el('logoutButton').addEventListener('click', async () => {
       el('logoutButton').disabled = true;
       try {

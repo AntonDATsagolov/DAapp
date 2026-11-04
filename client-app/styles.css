@@ -218,3 +218,13 @@ button:disabled{opacity:.5;cursor:wait}
    max-height:108px;bottom:calc(117px + env(safe-area-inset-bottom,0px));
  }
 }
+
+/* Public work status is self-reported by a reviewed business owner. */
+.place-working{display:inline-flex;align-items:center;align-self:flex-start;gap:6px;
+  margin-top:4px;padding:4px 9px;border-radius:999px;background:#e9eeeb;color:#556b5d;
+  font-size:.72rem;font-weight:800}
+.place-working::before{content:'';width:7px;height:7px;border-radius:50%;background:#9ea9a0}
+.place-working[data-working="true"]{background:#dff4e5;color:#107443}
+.place-working[data-working="true"]::before{background:#22a461}
+.place-working[data-working="false"]{background:#edf0ef;color:#52645a}
+.taxi-info #taxiAvailable{font-weight:800;color:#225e44}

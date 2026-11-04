@@ -37,7 +37,8 @@
         <p id="categoryNotice" class="category-notice" role="status" hidden></p>
         <aside id="taxiInfo" class="taxi-info" aria-label="Сервис такси" hidden>
           <strong>🚕 Такси в Шиели</strong>
-          <p>На карте показываются опубликованные службы такси. Список свободных водителей и заказ поездок пока не подключены. Раздел доступен всем жителям независимо от количества зарегистрированных водителей.</p>
+          <p id="taxiAvailable" role="status" aria-live="polite">Проверяем, сколько водителей сейчас на линии…</p>
+          <p>Водители самостоятельно отмечают выход на линию. На карте также показаны опубликованные службы такси. Заказ поездки пока не подключён.</p>
         </aside>
       </div>
       <section class="categories-panel" aria-label="Категории организаций">
@@ -180,6 +181,7 @@
     placesRetry: $('#placesRetry'),
     placesCount: $('#placesCount'),
     taxiInfo: $('#taxiInfo'),
+    taxiAvailable: $('#taxiAvailable'),
     categoryNotice: $('#categoryNotice'),
     coordinateForm: $('#coordinateForm'),
     coordinateInput: $('#coordinateInput'),

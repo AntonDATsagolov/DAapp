@@ -63,7 +63,7 @@ const categoryNames = {
 
 export async function initVillageMap({
   mapElement, mapStatus, retryButton, locateButton,
-  categories, emptyText, placesList, placesRetry, placesCount, taxiInfo, categoryNotice,
+  categories, emptyText, placesList, placesRetry, placesCount, taxiInfo, taxiAvailable, categoryNotice,
   coordinateForm, coordinateInput, mapLocation
 }) {
   let map;
@@ -73,11 +73,36 @@ export async function initVillageMap({
   let places = [];
   let selectedCategory = 'all';
   let catalogState = 'loading';
+  let taxiLoading = false;
 
   const placeTypeLabels = {
     shop: 'Магазин', cafe: 'Кафе', beauty: 'Красота',
     hotel: 'Гостиница', taxi: 'Такси'
   };
+  const workLabel = place => place.is_working === true ? 'На работе'
+    : place.is_working === false ? 'Не на работе'
+    : 'Статус работы не указан';
+
+  async function loadTaxiAvailability() {
+    if (taxiLoading || !taxiAvailable) return;
+    taxiLoading = true;
+    taxiAvailable.textContent = 'Проверяем число водителей на линии…';
+    try {
+      const {supabase}=await import('../shared/supabase.js');
+      const {data,error}=await supabase.rpc('daapp_public_available_drivers');
+      if(error) throw error;
+      if(!Number.isSafeInteger(data) || data<0) throw new Error('Invalid driver count');
+      taxiAvailable.textContent = data===0
+        ? 'Сейчас ни один подтверждённый водитель не отметил выход на линию.'
+        : 'Сейчас на линии: '+data+' водител'+
+          (data%10===1 && data%100!==11?'ь':data%10>=2 && data%10<=4 &&
+           (data%100<12 || data%100>14)?'я':'ей')+'.';
+    } catch {
+      taxiAvailable.textContent = 'Статус водителей временно недоступен. Проверьте SQL 012 и сеть.';
+    } finally {
+      taxiLoading = false;
+    }
+  }
 
   function renderCatalog() {
     // Published taxi ORGANISATIONS and approved DRIVER accounts are separate.
@@ -132,18 +157,31 @@ export async function initVillageMap({
       const description = document.createElement('span');
       description.textContent = placeTypeLabels[place.category] +
         (place.address ? ' · ' + place.address : '');
+      const working = document.createElement('span');
+      working.className = 'place-working';
+      working.dataset.working = String(place.is_working);
+      working.textContent = workLabel(place);
+      item.append(working);
       item.append(description);
       placesList.append(item);
 
       if (!markerLayer || !map) continue;
       const pin = window.L.circleMarker([place.latitude, place.longitude], {
-        radius: 8, weight: 2, color: '#fff', fillColor: '#17634c',
+        radius: 8, weight: 2, color: '#fff',
+        fillColor: place.is_working===true?'#16864d':
+          place.is_working===false?'#89958e':'#577c83',
         fillOpacity: 0.95
       }).addTo(markerLayer);
       const popup = document.createElement('div');
       const name = document.createElement('strong');
       name.textContent = place.name;
       popup.append(name);
+      const workState = document.createElement('p');
+      workState.textContent = workLabel(place);
+      workState.style.margin = '5px 0';
+      workState.style.fontWeight = '700';
+      workState.style.color = place.is_working===true?'#147b49':'#607368';
+      popup.append(workState);
       if (place.address) {
         const address = document.createElement('p');
         address.textContent = place.address;
@@ -292,6 +330,7 @@ export async function initVillageMap({
     }
     selectedCategory = selected;
     renderCatalog();
+    if(selected==='taxi')void loadTaxiAvailability();
   });
 
   renderCatalog();

@@ -32,7 +32,7 @@ jobs:
             if curl -fsS http://127.0.0.1:8000/client-app/ >/dev/null; then break; fi
             sleep 1
           done
-          for path in client-app/ business-app/ admin-app/ driver-app/ account-app/ account-app/auth.js shared/modes.js shared/mode-switcher.js client-app/profile.js client-app/places.js business-app/submissions.js admin-app/checks.js driver-app/driver.js shared/supabase.js; do
+          for path in client-app/ business-app/ admin-app/ driver-app/ account-app/ account-app/auth.js shared/modes.js shared/mode-switcher.js client-app/profile.js client-app/places.js business-app/submissions.js business-app/work-status.js admin-app/checks.js driver-app/driver.js shared/supabase.js; do
             curl --fail --silent --show-error "http://127.0.0.1:8000/$path" >/dev/null
           done
 
@@ -86,3 +86,5 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f tests/db/admin-control-center.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/011_unified_mode_navigation.sql
           psql -v ON_ERROR_STOP=1 -f tests/db/unified-modes.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/012_business_driver_work_status.sql
+          psql -v ON_ERROR_STOP=1 -f tests/db/work-status.sql

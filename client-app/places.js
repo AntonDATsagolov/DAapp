@@ -20,6 +20,7 @@ export function normalizePlace(raw) {
     category: raw.category,
     address: typeof raw.address === 'string' ? raw.address.trim().slice(0, 200) : '',
     phone: typeof raw.phone === 'string' ? raw.phone.trim().slice(0, 40) : '',
+    is_working: typeof raw.is_working === 'boolean' ? raw.is_working : null,
     latitude,
     longitude
   };
@@ -34,8 +35,8 @@ export function filterPlaces(places, category = 'all') {
 export async function fetchPublishedPlaces(supabase) {
   // Bounding box avoids downloading unrelated points. RLS separately limits
   // read access to is_published=true. Limit controls traffic on slow 3G.
-  const { data, error } = await supabase.from('map_places')
-    .select('id,name,category,address,phone,latitude,longitude')
+  const query=(fields)=>supabase.from('map_places')
+    .select(fields)
     .eq('is_published', true)
     .gte('latitude', SHIELI_BOUNDS.south)
     .lte('latitude', SHIELI_BOUNDS.north)
@@ -43,6 +44,13 @@ export async function fetchPublishedPlaces(supabase) {
     .lte('longitude', SHIELI_BOUNDS.east)
     .order('name', { ascending: true })
     .limit(150);
+  const currentFields='id,name,category,address,phone,latitude,longitude,is_working';
+  let {data,error}=await query(currentFields);
+  // Deploys happen before the user manually applies SQL 012. Keep the map
+  // available during the transition without inventing "closed" status.
+  if(error && ['42703','PGRST204'].includes(String(error.code||''))){
+    ({data,error}=await query('id,name,category,address,phone,latitude,longitude'));
+  }
   if (error) throw error;
   return (data || []).map(normalizePlace).filter(Boolean);
 }
