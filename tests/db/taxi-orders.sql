@@ -187,7 +187,7 @@ begin
     raise exception 'Driver accepted cancelled order' using errcode='XX000';
   exception when no_data_found then null;
   end;
-end $;
+end; $;
 set role authenticated;
 set request.jwt.claim.sub='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 select public.daapp_driver_set_online(true);
