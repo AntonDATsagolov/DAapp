@@ -21,6 +21,7 @@ function element() {
     append() {},
     reset() {},
     setAttribute() {},
+    checkValidity() { return true; },
     querySelectorAll() { return []; }
   };
 }
@@ -37,12 +38,14 @@ async function startApp(app) {
   };
   const emailInput = get('email');
   emailInput.value = 'test-registration@example.invalid';
+  get('adminPassword').value = 'strong-test-password';
   const document = {querySelector:get, getElementById:get};
   const calls = [];
   const auth = {
     async getSession() { return {data:{session:null},error:null}; },
     onAuthStateChange() {},
-    async signInWithOtp(payload) { calls.push(payload); return {data:{},error:null}; }
+    async signInWithOtp(payload) { calls.push({kind:'otp',payload}); return {data:{},error:null}; },
+    async signInWithPassword(payload) { calls.push({kind:'password',payload}); return {data:{},error:null}; }
   };
   const supabase = {auth};
   const moduleMap = {
@@ -52,7 +55,8 @@ async function startApp(app) {
     './submissions.js': {},
     './driver.js': {},
     './checks.js': {},
-    './accounts.js': {createAccountModerator:()=>({reset(){},refresh(){}})}
+    './accounts.js': {createAccountModerator:()=>({reset(){},refresh(){}})},
+    './control-center.js': {createControlCenter:()=>({reset(){},load(){}})}
   };
   function load(path) {
     assert.ok(Object.hasOwn(moduleMap,path), 'Unexpected module: ' + path);
@@ -70,22 +74,31 @@ async function startApp(app) {
   const onSubmit = login.trigger('submit');
   assert.equal(typeof onSubmit, 'function', app + ' registration handler missing');
   await onSubmit({preventDefault(){}});
-  assert.equal(calls.length,1,app + ' must send one OTP request');
+  assert.equal(calls.length,1,app + ' should issue one login request');
   return {html,calls,controls,location};
 }
 
 for(const app of appNames) {
-  test('OTP and redirect in '+app, async ()=>{
+  test('Login and authorized redirects in '+app, async ()=>{
     const result = await startApp(app);
     const call = result.calls[0];
-    assert.equal(call.email,'test-registration@example.invalid');
-    assert.equal(call.options.emailRedirectTo,result.location.href);
-    assert.equal(call.options.shouldCreateUser, false,
-      'Legacy email sign-in must not create duplicate accounts; register through account-app');
-    assert.equal(result.controls.get('email').value,call.email);
-    if (app === 'admin-app') {
+    if(app==='admin-app'){
+      assert.equal(call.kind,'password');
+      assert.equal(call.payload.email,'test-registration@example.invalid');
+      assert.equal(call.payload.password,'strong-test-password');
       assert.match(result.html,/саморегистрация здесь отключена/);
-    } else {
+      const magic=result.controls.get('magicLinkButton').trigger('click');
+      assert.equal(typeof magic,'function');
+      await magic();
+      const otp=result.calls[1];
+      assert.equal(otp.kind,'otp');
+      assert.equal(otp.payload.options.emailRedirectTo,result.location.href);
+      assert.equal(otp.payload.options.shouldCreateUser,false);
+    }else{
+      assert.equal(call.kind,'otp');
+      assert.equal(call.payload.email,'test-registration@example.invalid');
+      assert.equal(call.payload.options.emailRedirectTo,result.location.href);
+      assert.equal(call.payload.options.shouldCreateUser,false);
       assert.match(result.html,/account-app\/\?next=/i);
     }
     assert.doesNotMatch(result.html,/emailRedirectTo:\s*['"]http:\/\/localhost/i);
