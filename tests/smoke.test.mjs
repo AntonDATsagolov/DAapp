@@ -118,7 +118,7 @@ test('Shieli public places validate records and filter by category', async () =>
       assert.equal(table, 'map_places');
       const chain = {
         select(fields) {
-          assert.equal(fields, 'id,name,category,address,phone,latitude,longitude');
+          assert.equal(fields, 'id,name,category,address,phone,latitude,longitude,is_working');
           steps.push('select'); return chain;
         },
         eq(key, value) {
@@ -345,7 +345,7 @@ test('Driver app provides functional onboarding UI instead of a Supabase placeho
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script && script.includes("import('./driver.js')"));
   assert.doesNotThrow(() => new AsyncFunction(script));
-  for (const id of ['driverForm','registrationPanel','reviewPanel','linePanel','goOnline','goOffline','logoutButton','driverReviewLabel','contactPhone','vehiclePlate']) {
+  for (const id of ['driverForm','registrationPanel','reviewPanel','linePanel','lineSwitch','lineSwitchLabel','logoutButton','driverReviewLabel','contactPhone','vehiclePlate']) {
     assert.ok(html.includes('id="' + id + '"'), 'Missing functional driver control: ' + id);
   }
   assert.ok(html.includes('Заказы пока не подключены'));
