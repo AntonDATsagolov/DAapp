@@ -58,7 +58,7 @@ set role authenticated;
 set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 select public.daapp_admin_review_driver(
  '22222222-2222-4222-8222-222222222222','approved');
-select id as mode_shop_id from public.place_submissions
+select id as mode_shop_id from public.daapp_admin_list_submissions()
  where name='Mode Test Shop' \gset
 select public.daapp_admin_review_submission(
  :'mode_shop_id', 'approved', 44.176,66.740,null);
