@@ -49,8 +49,8 @@
 
   <section id="authPanel" class="panel">
     <h2>Единый аккаунт DAapp</h2>
-    <p>Для предпринимателя нужен тот же аккаунт, что и у жителя или водителя. Вход и регистрация — по логину, паролю и SMS.</p>
-    <p><a href="../account-app/?next=business">Войти или зарегистрироваться по номеру и паролю</a></p>
+    <p>Для предпринимателя нужен тот же аккаунт, что и у жителя или водителя. Вход и регистрация — через единый аккаунт с e-mail и паролем.</p>
+    <p><a href="../account-app/?next=business">Открыть единый вход DAapp</a></p>
     <p class="hint">Уже есть старый аккаунт по e-mail? Войдите через прежнюю ссылку:</p>
     <form id="loginForm">
       <label for="email">Электронная почта</label>
@@ -276,5 +276,6 @@
     el('authMessage').textContent = 'Не удалось подключиться. Проверьте интернет и настройки Supabase.';
   }
 </script>
+<script type="module" src="../shared/mode-switcher.js"></script>
 </body>
 </html>
