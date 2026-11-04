@@ -82,3 +82,5 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f tests/db/unified-identity.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/009_email_approval_directory.sql
           psql -v ON_ERROR_STOP=1 -f tests/db/email-registration.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/010_member_self_service_admin_control.sql
+          psql -v ON_ERROR_STOP=1 -f tests/db/admin-control-center.sql
