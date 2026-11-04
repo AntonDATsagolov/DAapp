@@ -12,9 +12,20 @@ const appNames = ['client-app','business-app','driver-app','admin-app'];
 
 function element() {
   const listeners = new Map();
+  const classes = new Set();
   return {
     hidden: false, disabled: false, value: '', textContent: '',
     dataset: {}, style: {},
+    classList: {
+      toggle(name, force) {
+        const enabled = force === undefined ? !classes.has(name) : Boolean(force);
+        if (enabled) classes.add(name);
+        else classes.delete(name);
+        return enabled;
+      },
+      remove(name) { classes.delete(name); },
+      contains(name) { return classes.has(name); }
+    },
     addEventListener(type, handler) { listeners.set(type, handler); },
     trigger(type) { return listeners.get(type); },
     replaceChildren() {},

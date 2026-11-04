@@ -26,6 +26,7 @@
     <section id="mapScreen" class="screen map-screen" aria-label="Карта Шиели">
       <div class="map-area">
         <div id="villageMap" role="region" aria-label="Интерактивная карта OpenStreetMap"></div>
+        <button id="mapLayoutToggle" class="map-layout-toggle" type="button" aria-pressed="true" aria-label="Переключить вид карты">Обычный вид</button>
         <form class="map-search" id="coordinateForm" autocomplete="off" role="search">
           <input id="coordinateInput" type="text" aria-label="Широта, долгота" placeholder="Координаты: 44.1760, 66.7410" maxlength="60">
           <button type="submit">Найти</button>
@@ -33,11 +34,17 @@
         <p id="mapStatus" class="map-status" role="status" aria-live="polite">Загружаем карту…</p>
         <button id="mapRetry" class="map-retry" type="button" hidden>Повторить загрузку</button>
         <button id="locateButton" class="map-locate" type="button"><span aria-hidden="true">◎</span> Где я?</button>
+        <p id="categoryNotice" class="category-notice" role="status" hidden></p>
+        <aside id="taxiInfo" class="taxi-info" aria-label="Сервис такси" hidden>
+          <strong>🚕 Такси в Шиели</strong>
+          <p>На карте показываются опубликованные службы такси. Список свободных водителей и заказ поездок пока не подключены. Раздел доступен всем жителям независимо от количества зарегистрированных водителей.</p>
+        </aside>
       </div>
       <section class="categories-panel" aria-label="Категории организаций">
         <div class="panel-top">
           <h2>Что рядом?</h2>
           <small id="placesCount">Загружаем каталог…</small>
+          <button id="placesPanelToggle" class="places-panel-toggle" type="button" aria-expanded="false" aria-controls="placesBody">Список мест</button>
         </div>
         <div id="categoryButtons" class="chips" role="group" aria-label="Выбрать категорию">
           <button type="button" class="chip" data-category="all" aria-pressed="true">◉ Все</button>
@@ -47,9 +54,11 @@
           <button type="button" class="chip" data-category="hotel" aria-pressed="false">⌂ Гостиницы</button>
           <button type="button" class="chip" data-category="taxi" aria-pressed="false">🚕 Такси</button>
         </div>
-        <p id="categoryEmpty" class="empty-text" role="status">Загружаем проверенные организации Шиели…</p>
-        <div id="placesList" class="places-list" aria-label="Организации Шиели" hidden></div>
-        <button id="placesRetry" class="places-retry" type="button" hidden>Обновить каталог</button>
+        <div id="placesBody" class="places-body">
+          <p id="categoryEmpty" class="empty-text" role="status">Загружаем проверенные организации Шиели…</p>
+          <div id="placesList" class="places-list" aria-label="Организации Шиели" hidden></div>
+          <button id="placesRetry" class="places-retry" type="button" hidden>Обновить каталог</button>
+        </div>
       </section>
     </section>
 
@@ -108,6 +117,42 @@
   const mapTab = $('#mapTab');
   const profileTab = $('#profileTab');
   let mapController = null;
+  const app = $('.app');
+  const mapLayoutToggle = $('#mapLayoutToggle');
+  const placesPanelToggle = $('#placesPanelToggle');
+  const categoriesPanel = $('.categories-panel');
+  const LAYOUT_KEY = 'daapp_map_view_v1';
+  let expandedMap = true;
+  try { expandedMap = localStorage.getItem(LAYOUT_KEY) !== 'compact'; }
+  catch { /* Private browsing may deny storage; default to fullscreen. */ }
+
+  function updateMapLayout() {
+    const active = expandedMap && !mapScreen.hidden;
+    app.classList.toggle('is-map-expanded', active);
+    mapScreen.classList.toggle('map-expanded', active);
+    mapLayoutToggle.textContent = expandedMap ? 'Обычный вид' : 'На весь экран';
+    mapLayoutToggle.setAttribute('aria-pressed', String(expandedMap));
+    if (!active) {
+      categoriesPanel.classList.remove('is-list-open');
+      placesPanelToggle.setAttribute('aria-expanded', 'false');
+      placesPanelToggle.textContent = 'Список мест';
+    }
+    if (mapController && !mapScreen.hidden) {
+      requestAnimationFrame(() => mapController.invalidateSize());
+    }
+  }
+  mapLayoutToggle.addEventListener('click', () => {
+    expandedMap = !expandedMap;
+    try { localStorage.setItem(LAYOUT_KEY, expandedMap ? 'full' : 'compact'); }
+    catch { /* The switch still works without storage. */ }
+    updateMapLayout();
+  });
+  placesPanelToggle.addEventListener('click', () => {
+    const open = !categoriesPanel.classList.contains('is-list-open');
+    categoriesPanel.classList.toggle('is-list-open', open);
+    placesPanelToggle.setAttribute('aria-expanded', String(open));
+    placesPanelToggle.textContent = open ? 'Скрыть список' : 'Список мест';
+  });
 
   function openTab(name) {
     const isMap = name === 'map';
@@ -115,11 +160,13 @@
     profileScreen.hidden = isMap;
     mapTab.setAttribute('aria-pressed', String(isMap));
     profileTab.setAttribute('aria-pressed', String(!isMap));
+    updateMapLayout();
     // После возвращения из профиля Leaflet должен пересчитать размер контейнера.
-    if (isMap && mapController) mapController.invalidateSize();
+    if (isMap && mapController) requestAnimationFrame(() => mapController.invalidateSize());
   }
   mapTab.addEventListener('click', () => openTab('map'));
   profileTab.addEventListener('click', () => openTab('profile'));
+  updateMapLayout();
 
   // Карта не зависит от авторизации: пользователь увидит её даже при сбое Supabase.
   import('./map.js').then(({ initVillageMap }) => initVillageMap({
@@ -132,10 +179,15 @@
     placesList: $('#placesList'),
     placesRetry: $('#placesRetry'),
     placesCount: $('#placesCount'),
+    taxiInfo: $('#taxiInfo'),
+    categoryNotice: $('#categoryNotice'),
     coordinateForm: $('#coordinateForm'),
     coordinateInput: $('#coordinateInput'),
     mapLocation: $('#mapLocation')
-  })).then((controller) => { mapController = controller; })
+  })).then((controller) => {
+    mapController = controller;
+    updateMapLayout();
+  })
     .catch((error) => {
       console.error('Ошибка инициализации карты', error);
       $('#mapStatus').textContent = 'Не удалось запустить карту. Проверьте интернет и обновите страницу.';

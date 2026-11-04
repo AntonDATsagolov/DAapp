@@ -63,7 +63,7 @@ const categoryNames = {
 
 export async function initVillageMap({
   mapElement, mapStatus, retryButton, locateButton,
-  categories, emptyText, placesList, placesRetry, placesCount,
+  categories, emptyText, placesList, placesRetry, placesCount, taxiInfo, categoryNotice,
   coordinateForm, coordinateInput, mapLocation
 }) {
   let map;
@@ -80,6 +80,10 @@ export async function initVillageMap({
   };
 
   function renderCatalog() {
+    // Published taxi ORGANISATIONS and approved DRIVER accounts are separate.
+    // Show an honest service state without pretending that order booking exists.
+    if (taxiInfo) taxiInfo.hidden = selectedCategory !== 'taxi';
+    if (categoryNotice) categoryNotice.hidden = true;
     placesList.replaceChildren();
     if (markerLayer) markerLayer.clearLayers();
     placesRetry.hidden = catalogState !== 'error' && catalogState !== 'unconfigured';
@@ -104,10 +108,18 @@ export async function initVillageMap({
     placesCount.textContent = visible.length + ' из ' + places.length;
     placesList.hidden = visible.length === 0;
     emptyText.textContent = visible.length === 0
-      ? (places.length === 0
-        ? 'Пока нет опубликованных проверенных организаций Шиели.'
-        : 'В этой категории пока нет опубликованных организаций.')
+      ? (selectedCategory === 'taxi'
+        ? 'Опубликованных служб такси пока нет. Анкеты водителей хранятся отдельно; заказы поездок ещё не подключены.'
+        : places.length === 0
+          ? 'Пока нет опубликованных проверенных организаций Шиели.'
+          : 'В этой категории пока нет опубликованных организаций.')
       : 'Нажмите на организацию, чтобы показать её на карте.';
+    if (categoryNotice && visible.length === 0 && selectedCategory !== 'taxi') {
+      categoryNotice.textContent = selectedCategory === 'all'
+        ? emptyText.textContent
+        : 'Пока нет мест в категории «' + categoryNames[selectedCategory] + '».';
+      categoryNotice.hidden = false;
+    }
 
     for (const place of visible) {
       // Database values are ALWAYS written with textContent, never innerHTML.

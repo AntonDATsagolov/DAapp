@@ -75,3 +75,146 @@ button:disabled{opacity:.5;cursor:wait}
 .place-item:focus-visible{outline:2px solid #116749;outline-offset:2px}
 .places-retry{margin:8px 18px 0;background:#e8f1e9;border:0;border-radius:10px;color:#16684d;font-size:.79rem;font-weight:700;padding:10px 14px;min-height:38px}
 @media(min-width:760px){.places-list{max-height:200px;max-width:920px;margin:0 auto;padding:5px 18px 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}}
+
+
+/* Fullscreen map: resident's default. Compact layout remains available. */
+.map-layout-toggle{
+ position:absolute;top:82px;right:14px;z-index:470;min-height:43px;
+ border:1px solid #d7e6dc;border-radius:12px;padding:10px 12px;
+ background:#ffffffed;color:#145c42;font-weight:800;font-size:.78rem;
+ box-shadow:0 3px 16px #143e3030;touch-action:manipulation;
+}
+.map-layout-toggle:focus-visible,.places-panel-toggle:focus-visible{
+ outline:3px solid #8accaa;outline-offset:2px;
+}
+.places-panel-toggle{
+ display:none;flex-shrink:0;border:1px solid #c6e1d2;
+ background:#fff;color:#135d43;border-radius:11px;
+ min-height:34px;padding:6px 12px;font-size:.79rem;font-weight:800;
+}
+.category-notice{
+ position:absolute;left:14px;right:14px;bottom:76px;z-index:460;
+ max-width:390px;margin:0;padding:12px 14px;
+ background:#fffffff2;color:#305944;border:1px solid #dce9dc;
+ border-radius:13px;font-size:.81rem;line-height:1.5;
+ box-shadow:0 5px 18px #193d2b2e;
+}
+.taxi-info{
+ position:absolute;left:14px;right:14px;bottom:76px;z-index:460;
+ max-width:420px;padding:13px 15px;border-radius:15px;
+ background:#fffdf3f5;border:1px solid #efdfb6;
+ box-shadow:0 5px 24px #19342e38;color:#374331;
+}
+.taxi-info strong{font-size:.92rem;font-weight:850}
+.taxi-info p{font-size:.8rem;line-height:1.45;margin:6px 0 0}
+.places-body{min-width:0}
+
+/* The map extends behind the navigation, which remains available on touch. */
+.app.is-map-expanded .topbar{display:none}
+.app.is-map-expanded .tabbar{
+ position:absolute;inset:auto 0 0;z-index:700;
+ height:calc(66px + env(safe-area-inset-bottom,0px));
+ background:#ffffffed;backdrop-filter:blur(14px);
+ box-shadow:0 -2px 18px #243d2b20;
+}
+.map-screen.map-expanded{display:flex;flex-direction:column}
+.map-screen.map-expanded .map-area{flex:1;min-height:0}
+.map-screen.map-expanded .map-search{
+ top:calc(10px + env(safe-area-inset-top,0px));
+ left:10px;right:118px;max-width:none;margin:0;padding:4px;
+ border-radius:13px;
+}
+.map-screen.map-expanded .map-search input{
+ font-size:.77rem;min-height:38px;padding:0 7px;
+}
+.map-screen.map-expanded .map-search input::placeholder{color:#9ca8a0}
+.map-screen.map-expanded .map-search button{
+ padding:0 10px;min-width:57px;font-size:.78rem;
+}
+.map-screen.map-expanded .map-layout-toggle{
+ top:calc(10px + env(safe-area-inset-top,0px));right:10px;
+ padding:8px 9px;min-height:46px;max-width:106px;font-size:.74rem;
+}
+.map-screen.map-expanded .categories-panel{
+ position:absolute;top:calc(72px + env(safe-area-inset-top,0px));
+ bottom:auto;left:10px;right:10px;z-index:620;
+ padding:0;background:transparent;border:0;box-shadow:none;
+ pointer-events:none;max-width:none;
+}
+.map-screen.map-expanded .categories-panel .panel-top{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:8px;margin:0;max-width:none;padding:0 2px;
+ pointer-events:auto;
+}
+.map-screen.map-expanded .categories-panel .panel-top h2{
+ font-size:.81rem;min-height:34px;padding:9px 10px;margin:0;
+ border-radius:10px;background:#fffffff5;
+ box-shadow:0 2px 10px #143e301b;color:#20563e;
+}
+.map-screen.map-expanded .categories-panel .panel-top small{display:none}
+.map-screen.map-expanded .places-panel-toggle{
+ display:inline-flex;align-items:center;justify-content:center;
+ box-shadow:0 2px 10px #143e301b;
+}
+.map-screen.map-expanded .chips{
+ max-width:none;margin:6px 0 0;padding:3px 1px 7px;
+ gap:7px;pointer-events:auto;
+}
+.map-screen.map-expanded .chip{
+ background:#fffffff4;color:#205341;border:1px solid #e2ece5;
+ box-shadow:0 3px 12px #1b493322;min-height:40px;
+ padding:9px 12px;font-size:.79rem;
+}
+.map-screen.map-expanded .chip[aria-pressed=true]{
+ color:white;background:#145d45;border-color:#145d45;
+}
+.map-screen.map-expanded .places-body{display:none}
+.map-screen.map-expanded .categories-panel.is-list-open .places-body{
+ display:block;pointer-events:auto;max-height:min(46dvh,380px);
+ overflow:auto;background:#fffffff9;box-shadow:0 6px 22px #193d2b39;
+ padding:13px 0;border:1px solid #e0ebe1;border-radius:14px;
+ margin-top:7px;
+}
+.map-screen.map-expanded .places-list{
+ max-height:min(30dvh,270px);padding:7px 12px;
+}
+.map-screen.map-expanded .empty-text{
+ max-width:none;margin:0;padding:2px 14px;font-size:.8rem;
+}
+.map-screen.map-expanded .map-locate{
+ left:12px;bottom:calc(82px + env(safe-area-inset-bottom,0px));
+ padding:10px 13px;font-size:.82rem;
+}
+.map-screen.map-expanded .map-status{
+ top:calc(175px + env(safe-area-inset-top,0px));left:12px;right:12px;
+ max-width:350px;
+}
+.map-screen.map-expanded .map-retry{
+ top:calc(230px + env(safe-area-inset-top,0px));left:12px;
+}
+.map-screen.map-expanded .category-notice{
+ left:12px;right:12px;bottom:calc(136px + env(safe-area-inset-bottom,0px));
+}
+.map-screen.map-expanded .taxi-info{
+ left:12px;right:12px;bottom:calc(136px + env(safe-area-inset-bottom,0px));
+ max-width:440px;max-height:145px;overflow:auto;padding:12px 13px;
+}
+.app.is-map-expanded .leaflet-bottom.leaflet-right{
+ margin-bottom:calc(82px + env(safe-area-inset-bottom,0px));
+}
+@media(min-width:760px){
+ .map-screen.map-expanded .map-search{left:24px;right:auto;width:min(540px,55vw)}
+ .map-screen.map-expanded .map-layout-toggle{right:24px}
+ .map-screen.map-expanded .categories-panel{top:86px;left:24px;right:24px}
+ .map-screen.map-expanded .map-area{min-height:0}
+ .map-screen.map-expanded .map-locate{left:24px;bottom:100px}
+ .map-screen.map-expanded .taxi-info{left:24px;bottom:164px}
+}
+@media(max-height:600px){
+ .map-screen.map-expanded .categories-panel{
+   top:calc(62px + env(safe-area-inset-top,0px));
+ }
+ .map-screen.map-expanded .taxi-info{
+   max-height:108px;bottom:calc(117px + env(safe-area-inset-bottom,0px));
+ }
+}
