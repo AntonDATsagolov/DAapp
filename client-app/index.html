@@ -38,7 +38,8 @@
         <aside id="taxiInfo" class="taxi-info" aria-label="Сервис такси" hidden>
           <strong>🚕 Такси в Шиели</strong>
           <p id="taxiAvailable" role="status" aria-live="polite">Проверяем, сколько водителей сейчас на линии…</p>
-          <p>Водители самостоятельно отмечают выход на линию. На карте также показаны опубликованные службы такси. Заказ поездки пока не подключён.</p>
+          <p>Водители самостоятельно отмечают выход на линию. Новые заявки увидят только водители, которые сейчас работают.</p>
+          <button id="taxiOrderOpen" class="taxi-order-open" type="button">Заказать такси / Мои поездки</button>
         </aside>
       </div>
       <section class="categories-panel" aria-label="Категории организаций">
@@ -101,6 +102,29 @@
       </div>
     </section>
   </main>
+
+  <dialog id="taxiDialog" class="taxi-dialog" aria-labelledby="taxiDialogTitle">
+    <div class="taxi-dialog-head">
+      <h2 id="taxiDialogTitle">🚕 Такси в Шиели</h2>
+      <button id="taxiDialogClose" type="button" aria-label="Закрыть окно заказа">✕</button>
+    </div>
+    <p class="muted">Укажите место подачи и пункт назначения. Водители на линии увидят заявку внутри DAapp. Тариф и оплата пока согласовываются напрямую.</p>
+    <p id="taxiLoginHint" class="muted" hidden>Чтобы заказать такси, <a href="../account-app/?next=resident">войдите в DAapp</a> и подтвердите аккаунт.</p>
+    <form id="taxiForm">
+      <label for="taxiPickup">Откуда забрать</label>
+      <textarea id="taxiPickup" name="pickup" required minlength="5" maxlength="160" rows="2" placeholder="Улица, дом, ориентир в Шиели"></textarea>
+      <label for="taxiDestination">Куда поехать</label>
+      <textarea id="taxiDestination" name="destination" required minlength="5" maxlength="160" rows="2" placeholder="Адрес или ориентир"></textarea>
+      <label for="taxiNote">Комментарий (необязательно)</label>
+      <textarea id="taxiNote" name="note" maxlength="240" rows="2" placeholder="Например: жду у главного входа"></textarea>
+      <button id="taxiSubmit" class="action" type="submit">Отправить заявку водителям</button>
+    </form>
+    <p id="taxiOrderMessage" class="message" role="status" aria-live="polite"></p>
+    <h3>Мои заказы</h3>
+    <div id="taxiOrderList" class="taxi-order-list" aria-live="polite"></div>
+    <button id="taxiOrderRefresh" class="action secondary" type="button">Обновить статусы</button>
+    <p class="muted">При закрытом приложении push-уведомления пока не отправляются. Если нужно отказаться от поездки, отмените заказ здесь.</p>
+  </dialog>
 
   <nav class="tabbar" aria-label="Разделы DAapp">
     <button id="mapTab" class="tab" type="button" aria-controls="mapScreen" aria-pressed="true">
@@ -204,11 +228,131 @@
   const logoutButton = $('#logoutButton');
   const accountEmail = $('#accountEmail');
 
+  let passengerId = null;
+  let taxiClient = null;
+  let taxiApi = null;
+  let taxiRefreshTimer = null;
+  let taxiRefreshing = false;
+  const taxiDialog = $('#taxiDialog');
+  const taxiForm = $('#taxiForm');
+  const taxiMessage = $('#taxiOrderMessage');
+  const taxiList = $('#taxiOrderList');
+  function showTaxiIdentity() {
+    const signed = Boolean(passengerId);
+    taxiForm.hidden = !signed;
+    $('#taxiLoginHint').hidden = signed;
+    $('#taxiOrderRefresh').hidden = !signed;
+    if (!signed) taxiList.replaceChildren();
+  }
+  async function refreshTaxiOrders() {
+    if (!passengerId || !taxiClient || !taxiApi || taxiRefreshing) return;
+    const accountId = passengerId;
+    taxiRefreshing = true;
+    try {
+      const items = await taxiApi.fetchMyTaxiOrders(taxiClient);
+      if (accountId !== passengerId) return;
+      taxiList.replaceChildren();
+      const active = items.some(item=>item.status==='requested'||item.status==='accepted');
+      $('#taxiSubmit').disabled = active;
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Поездок пока нет.';
+        taxiList.append(empty);
+      }
+      for (const item of items) {
+        const card = document.createElement('article');
+        card.className = 'taxi-order-card';
+        const title = document.createElement('strong');
+        title.textContent = taxiApi.TAXI_STATUS_LABELS[item.status] || 'Статус заказа';
+        const details = document.createElement('p');
+        details.textContent = item.pickup + ' → ' + item.destination;
+        card.append(title, details);
+        if(item.driver_name) {
+          const assigned = document.createElement('p');
+          assigned.textContent = 'Водитель: ' + item.driver_name +
+            (item.driver_phone ? ' · ' + item.driver_phone : '');
+          card.append(assigned);
+        }
+        if (item.status==='requested'||item.status==='accepted') {
+          const cancel = document.createElement('button');
+          cancel.className = 'taxi-cancel';
+          cancel.type = 'button';
+          cancel.textContent = 'Отменить заказ';
+          cancel.addEventListener('click',async()=>{
+            if(!window.confirm('Отменить эту поездку?'))return;
+            cancel.disabled = true;
+            const result = await taxiApi.cancelTaxiOrder(taxiClient,item.id);
+            if(accountId!==passengerId)return;
+            taxiMessage.textContent = result.error || 'Заказ отменён.';
+            await refreshTaxiOrders();
+            cancel.disabled = false;
+          });
+          card.append(cancel);
+        }
+        taxiList.append(card);
+      }
+    } catch(error) {
+      if(accountId===passengerId) {
+        console.warn('DAapp taxi passenger error',error?.code||'network');
+        taxiMessage.textContent='Заказы пока недоступны. Проверьте SQL 013 и подключение.';
+      }
+    } finally {
+      taxiRefreshing=false;
+    }
+  }
+  $('#taxiOrderOpen').addEventListener('click',()=>{
+    showTaxiIdentity();
+    taxiDialog.showModal();
+    void refreshTaxiOrders();
+    if(taxiRefreshTimer===null) {
+      taxiRefreshTimer=window.setInterval(()=>{
+        if(!taxiDialog.open)return;
+        void refreshTaxiOrders();
+      },12000);
+    }
+  });
+  $('#taxiDialogClose').addEventListener('click',()=>taxiDialog.close());
+  taxiDialog.addEventListener('close',()=>{
+    if(taxiRefreshTimer!==null)window.clearInterval(taxiRefreshTimer);
+    taxiRefreshTimer=null;
+  });
+  $('#taxiOrderRefresh').addEventListener('click',()=>{void refreshTaxiOrders()});
+  taxiForm.addEventListener('submit',async(event)=>{
+    event.preventDefault();
+    if(!passengerId || !taxiClient || !taxiApi)return;
+    const id=passengerId, button=$('#taxiSubmit');
+    button.disabled=true;
+    taxiMessage.textContent='Отправляем заказ…';
+    try {
+      const result=await taxiApi.createTaxiOrder(taxiClient,{
+        pickup:$('#taxiPickup').value,
+        destination:$('#taxiDestination').value,
+        note:$('#taxiNote').value
+      });
+      if(id!==passengerId)return;
+      if(result.error)taxiMessage.textContent=result.error;
+      else {
+        taxiMessage.textContent='Заявка создана. Ожидаем водителя на линии.';
+        taxiForm.reset();
+      }
+      await refreshTaxiOrders();
+    }catch {
+      if(id===passengerId)taxiMessage.textContent='Сбой соединения. Проверьте интернет.';
+    }finally {
+      // The refresh logic disables this again if an active order exists.
+      if(id===passengerId && !taxiList.querySelector('.taxi-order-card strong'))button.disabled=false;
+    }
+  });
+  showTaxiIdentity();
+
   try {
-    const [{ supabase }, { createProfileController }] = await Promise.all([
+    const [{ supabase }, { createProfileController }, orders] = await Promise.all([
       import('../shared/supabase.js'),
-      import('./profile.js')
+      import('./profile.js'),
+      import('./taxi-orders.js')
     ]);
+    taxiClient=supabase;
+    taxiApi=orders;
     const profile = createProfileController({
       form: $('#profileForm'),
       fullName: $('#fullName'),
@@ -225,6 +369,9 @@
       const nextId = user?.id ?? null;
       if (displayedUserId === nextId) return;
       displayedUserId = nextId;
+      passengerId = nextId;
+      showTaxiIdentity();
+      if(taxiDialog.open)void refreshTaxiOrders();
       login.hidden = Boolean(user);
       account.hidden = !user;
       accountEmail.textContent = user?.email ?? '';
