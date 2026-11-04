@@ -64,6 +64,7 @@ async function startApp(app) {
     './map.js': {initVillageMap: async () => ({invalidateSize(){}})},
     './profile.js': {createProfileController: () => ({show(){},clear(){}})},
     './submissions.js': {},
+    './work-status.js': {},
     './driver.js': {},
     './checks.js': {},
     './accounts.js': {createAccountModerator:()=>({reset(){},refresh(){}})},
