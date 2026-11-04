@@ -1,5 +1,8 @@
 # DAapp — Шаг 13. Регистрация по e-mail, ручное одобрение, телефон и аватар
 
+> **Обновление:** Ручное одобрение каждого жителя — предыдущий сценарий. После установки SQL 010 обычные пользователи с подтверждённым e-mail получают базовый доступ автоматически. Бизнес и водители проходят отдельную проверку. См. [Шаг 14](../admin-app/STEP_14_CONTROL_CENTER.md).
+
+
 **Ссылка регистрации:** https://antondatsagolov.github.io/DAapp/account-app/  
 **Админка:** https://antondatsagolov.github.io/DAapp/admin-app/  
 **Контакты:** https://antondatsagolov.github.io/DAapp/directory-app/
