@@ -233,6 +233,7 @@
   let taxiApi = null;
   let taxiRefreshTimer = null;
   let taxiRefreshing = false;
+  let activePassengerOrder = false;
   const taxiDialog = $('#taxiDialog');
   const taxiForm = $('#taxiForm');
   const taxiMessage = $('#taxiOrderMessage');
@@ -252,8 +253,8 @@
       const items = await taxiApi.fetchMyTaxiOrders(taxiClient);
       if (accountId !== passengerId) return;
       taxiList.replaceChildren();
-      const active = items.some(item=>item.status==='requested'||item.status==='accepted');
-      $('#taxiSubmit').disabled = active;
+      activePassengerOrder = items.some(item=>item.status==='requested'||item.status==='accepted');
+      $('#taxiSubmit').disabled = activePassengerOrder;
       if (!items.length) {
         const empty = document.createElement('p');
         empty.textContent = 'Поездок пока нет.';
@@ -339,8 +340,8 @@
     }catch {
       if(id===passengerId)taxiMessage.textContent='Сбой соединения. Проверьте интернет.';
     }finally {
-      // The refresh logic disables this again if an active order exists.
-      if(id===passengerId && !taxiList.querySelector('.taxi-order-card strong'))button.disabled=false;
+      // The server-confirmed active order controls whether new requests are allowed.
+      if(id===passengerId)button.disabled=activePassengerOrder;
     }
   });
   showTaxiIdentity();
