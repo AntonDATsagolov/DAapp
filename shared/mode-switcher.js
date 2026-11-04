@@ -92,6 +92,9 @@ if(target){
         }
       }
     }
+    addOption('Мой профиль, аватар и настройки телефона',null,{
+      href:new URL('../account-app/?manage=1',window.location.href).href
+    });
   }
   open.addEventListener('click',()=>{
     options.hidden=!options.hidden;
