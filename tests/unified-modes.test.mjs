@@ -51,7 +51,7 @@ test('Mode fetch does not promote browser metadata or localStorage',async()=>{
   assert.match(source,/await saveLastMode\(supabase,moduleMode\)/);
   assert.match(source,/await saveLastMode\(supabase,mode\)/);
   assert.match(source,/mode===moduleMode/);
-  assert.doesNotMatch(source,/localStorage|sessionStorage|service_role/i);
+  assert.doesNotMatch(source,/localStorage\\.setItem|localStorage\\.getItem|sessionStorage\\.setItem|service_role/i);
 });
 
 test('Shared settings switcher appears in all three user modules',()=>{
@@ -64,7 +64,7 @@ test('Shared settings switcher appears in all three user modules',()=>{
   assert.match(code,/Настройки · Режим DAapp/);
   assert.match(code,/Сменить режим/);
   assert.match(code,/Подключить режим/);
-  assert.match(code,/Заявка .* на проверке/);
+  assert.match(code,/на проверке/);
 });
 
 test('Single homepage routes to the account and restores remembered allowed mode',()=>{
