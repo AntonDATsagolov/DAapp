@@ -52,7 +52,8 @@ jobs:
           test -f _site/business-app/index.html
           test -f _site/admin-app/index.html
           test -f _site/admin-app/checks.js
-          test -f _site/business-app/submissions.js
+          test -f _site/business-app/submissions.js business-app/work-status.js
+          test -f _site/business-app/work-status.js
           test -f _site/driver-app/index.html
           test -f _site/driver-app/driver.js
           test -f _site/account-app/index.html
