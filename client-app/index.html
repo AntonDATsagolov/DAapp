@@ -243,7 +243,11 @@
     taxiForm.hidden = !signed;
     $('#taxiLoginHint').hidden = signed;
     $('#taxiOrderRefresh').hidden = !signed;
-    if (!signed) taxiList.replaceChildren();
+    if (!signed) {
+      activePassengerOrder = false;
+      $('#taxiSubmit').disabled = false;
+      taxiList.replaceChildren();
+    }
   }
   async function refreshTaxiOrders() {
     if (!passengerId || !taxiClient || !taxiApi || taxiRefreshing) return;
