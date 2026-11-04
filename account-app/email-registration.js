@@ -18,6 +18,7 @@ export function validateEmailRegistration(values) {
   const age=Number(values.age);
   const password=String(values.password||'');
   const residency=values.residency;
+  const goal=values.goal||'resident';
   if(!USERNAME.test(username))return {error:'Логин: 4–24 латинских символа, цифры или _. Первая — буква.'};
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length>254)
     return {error:'Введите правильный адрес электронной почты.'};
@@ -26,12 +27,14 @@ export function validateEmailRegistration(values) {
     return {error:'Возраст должен быть от 13 до 120 лет.'};
   if(!['resident','guest'].includes(residency))
     return {error:'Выберите: житель или гость Шиели.'};
+  if(!['resident','business','driver'].includes(goal))
+    return {error:'Выберите, чем хотите заниматься в DAapp.'};
   if(password.length<10 || password.length>72)
     return {error:'Пароль должен содержать от 10 до 72 символов.'};
   if(password!==values.confirmPassword)
     return {error:'Пароли не совпадают.'};
   const publishPhone=age>=18 && values.publishPhone===true;
-  return {username,email,phone,age,password,residency,publishPhone};
+  return {username,email,phone,age,password,residency,goal,publishPhone};
 }
 
 export async function submitEmailRegistration(client,values,redirectUrl) {
@@ -47,6 +50,7 @@ export async function submitEmailRegistration(client,values,redirectUrl) {
         phone:data.phone,
         age:data.age,
         residency:data.residency,
+        goal:data.goal,
         publish_phone:data.publishPhone
       }}
     }

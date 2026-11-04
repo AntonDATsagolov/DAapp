@@ -60,6 +60,7 @@ jobs:
           test -f _site/account-app/email-registration.js
           test -f _site/directory-app/index.html
           test -f _site/admin-app/accounts.js
+          test -f _site/admin-app/control-center.js
           test -f _site/shared/supabase.js
           test -f _site/diagnostics/index.html
           if grep -REq 'sb_secret_[A-Za-z0-9_-]{10,}' _site; then
@@ -92,7 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           base="https://antondatsagolov.github.io/DAapp"
-          for path in client-app/ client-app/map.js client-app/places.js client-app/styles.css business-app/ business-app/submissions.js admin-app/ admin-app/checks.js admin-app/accounts.js driver-app/ driver-app/driver.js account-app/ account-app/auth.js account-app/email-registration.js directory-app/ shared/supabase.js diagnostics/; do
+          for path in client-app/ client-app/map.js client-app/places.js client-app/styles.css business-app/ business-app/submissions.js admin-app/ admin-app/checks.js admin-app/accounts.js admin-app/control-center.js driver-app/ driver-app/driver.js account-app/ account-app/auth.js account-app/email-registration.js directory-app/ shared/supabase.js diagnostics/; do
             echo "Checking $base/$path"
             success=0
             for attempt in $(seq 1 15); do

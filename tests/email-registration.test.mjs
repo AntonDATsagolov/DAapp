@@ -38,7 +38,7 @@ test('Email password signup sends metadata, not SMS, and requires correct redire
  assert.equal(payload.options.emailRedirectTo,url);
  assert.deepEqual(payload.options.data.daapp_registration,{
    flow:'email_manual_v1',username:'test_user',phone:'+77771234567',
-   age:29,residency:'resident',publish_phone:true
+   age:29,residency:'resident',goal:'resident',publish_phone:true
  });
  assert.ok(!payload.phone);
  assert.ok(!payload.options.channel);
