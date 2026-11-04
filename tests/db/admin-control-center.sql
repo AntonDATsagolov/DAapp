@@ -123,14 +123,14 @@ set role authenticated;
 set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 select public.daapp_architect_update_settings(false,false);
 set request.jwt.claim.sub='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-do $
+do $$
 begin
  if (select count(*) from public.daapp_public_member_directory(20))<>0 then
   raise exception 'Architect-disabled contacts directory still reveals phones';
  end if;
-end $;
+end $$;
 set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-do $
+do $$
 declare v jsonb;
 begin
  v:=public.daapp_admin_dashboard();
