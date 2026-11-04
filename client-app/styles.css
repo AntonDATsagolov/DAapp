@@ -92,6 +92,13 @@ button:disabled{opacity:.5;cursor:wait}
  background:#fff;color:#135d43;border-radius:11px;
  min-height:34px;padding:6px 12px;font-size:.79rem;font-weight:800;
 }
+.category-notice{
+ position:absolute;left:14px;right:14px;bottom:76px;z-index:460;
+ max-width:390px;margin:0;padding:12px 14px;
+ background:#fffffff2;color:#305944;border:1px solid #dce9dc;
+ border-radius:13px;font-size:.81rem;line-height:1.5;
+ box-shadow:0 5px 18px #193d2b2e;
+}
 .taxi-info{
  position:absolute;left:14px;right:14px;bottom:76px;z-index:460;
  max-width:420px;padding:13px 15px;border-radius:15px;
@@ -184,6 +191,9 @@ button:disabled{opacity:.5;cursor:wait}
 }
 .map-screen.map-expanded .map-retry{
  top:calc(230px + env(safe-area-inset-top,0px));left:12px;
+}
+.map-screen.map-expanded .category-notice{
+ left:12px;right:12px;bottom:calc(136px + env(safe-area-inset-bottom,0px));
 }
 .map-screen.map-expanded .taxi-info{
  left:12px;right:12px;bottom:calc(136px + env(safe-area-inset-bottom,0px));
