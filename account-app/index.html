@@ -115,9 +115,13 @@ footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
       <p id="memberInfo" class="hint"></p>
       <button id="refreshAccount" type="button" class="btn alt block">Проверить статус снова</button>
       <div id="approvedLinks" class="links" hidden>
-        <a id="continueLink" href="../client-app/">Открыть DAapp</a>
-        <a href="../driver-app/">Кабинет водителя</a>
-        <a href="../business-app/">Кабинет предпринимателя</a>
+        <p id="modeSummary" class="hint">Проверяем доступные режимы…</p>
+        <a id="continueLink" href="../client-app/">Вернуться в последний режим</a>
+        <a id="residentModeLink" href="../client-app/">Житель / покупатель</a>
+        <a id="driverModeLink" href="../driver-app/" hidden>Водитель / таксист</a>
+        <a id="businessModeLink" href="../business-app/" hidden>Предприниматель</a>
+        <a id="driverApplyLink" href="../driver-app/?apply=1" hidden>Подать заявку водителя</a>
+        <a id="businessApplyLink" href="../business-app/?apply=1" hidden>Зарегистрировать бизнес</a>
         <a href="../directory-app/">Контакты пользователей</a>
       </div>
       <button id="logoutButton" type="button" class="btn alt block">Выйти</button>
@@ -149,7 +153,7 @@ footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
 const $=id=>document.getElementById(id);
 const say=(id,value)=>{$(id).textContent=value};
 const next=new URLSearchParams(location.search).get('next');
-let supabase,authHelpers,registrationHelpers,sessionUser=null,epoch=0;
+let supabase,authHelpers,registrationHelpers,modeHelpers,sessionUser=null,epoch=0;
 function switchTab(tab) {
   $('signupTab').setAttribute('aria-pressed',String(tab==='signup'));
   $('loginTab').setAttribute('aria-pressed',String(tab==='login'));
@@ -252,13 +256,45 @@ async function displayAccount(user) {
       '. Номер для связи: '+(decision.phone_number||'не указан')+
       '. SMS пока не используется.'));
   $('approvedLinks').hidden=status!=='approved';
-  const initialGoal=['resident','driver','business'].includes(user.user_metadata?.daapp_registration?.goal)
-    ? user.user_metadata.daapp_registration.goal:'resident';
-  const destination=next||initialGoal;
-  $('continueLink').href=authHelpers.NEXT_DESTINATIONS[authHelpers.safeDestination(destination)];
-  $('continueLink').textContent=destination==='business'
-    ?'Перейти к оформлению бизнеса':destination==='driver'
-      ?'Заполнить анкету водителя':'Открыть DAapp';
+  $('driverModeLink').hidden=true;
+  $('businessModeLink').hidden=true;
+  $('driverApplyLink').hidden=true;
+  $('businessApplyLink').hidden=true;
+  const managing=new URLSearchParams(location.search).has('manage');
+  if(status==='approved'){
+    const modes=await modeHelpers.getModeState(supabase);
+    if(current!==epoch||sessionUser?.id!==user.id)return;
+    if(modes.state?.approved){
+      const state=modes.state;
+      const requested=next&&state.availableModes.includes(next)?next:null;
+      const last=state.lastMode;
+      const chosen=requested||last;
+      $('continueLink').href=modeHelpers.modeUrl(chosen,location.href);
+      $('continueLink').textContent='Вернуться в режим «'+modeHelpers.MODE_LABELS[chosen]+'»';
+      $('residentModeLink').href=modeHelpers.modeUrl('resident',location.href);
+      for(const mode of ['business','driver']){
+        const active=state.availableModes.includes(mode);
+        $(mode+'ModeLink').hidden=!active;
+        $(mode+'ApplyLink').hidden=active;
+      }
+      $('modeSummary').textContent='Последний режим: '+modeHelpers.MODE_LABELS[last]+
+        '. Разрешённые режимы: '+state.availableModes.map(x=>modeHelpers.MODE_LABELS[x]).join(', ')+'.';
+      // A user opening the single DAapp URL resumes the last reviewed mode.
+      // manage=1 keeps account settings (avatar, phone visibility) accessible.
+      if(!managing && (!next || requested)){
+        say('decisionStatus','Открываем ваш последний рабочий режим…');
+        window.location.replace(modeHelpers.modeUrl(chosen,location.href));
+        return;
+      }
+      if(next&&!requested){
+        say('modeSummary','Рабочий режим «'+(modeHelpers.MODE_LABELS[next]||next)+
+          '» ещё не подтверждён. Вы можете подать заявку ниже.');
+      }
+    }else{
+      $('continueLink').href=modeHelpers.modeUrl('resident',location.href);
+      say('modeSummary',modes.error||'Режимы пока не настроены (SQL 011).');
+    }
+  }
   $('avatarPanel').hidden=!user.email_confirmed_at || Boolean(decision.legacy);
   $('phoneOptions').hidden=status!=='approved'||decision.legacy||
     Number(membership.data?.age_at_registration)<18;
@@ -301,12 +337,13 @@ $('logoutButton').addEventListener('click',async()=>{
   finally{$('logoutButton').disabled=false;}
 });
 try{
-  const [mod,helpers,signup]=await Promise.all([
+  const [mod,helpers,signup,modes]=await Promise.all([
     import('../shared/supabase.js'),
     import('./auth.js'),
-    import('./email-registration.js')
+    import('./email-registration.js'),
+    import('../shared/modes.js')
   ]);
-  supabase=mod.supabase;authHelpers=helpers;registrationHelpers=signup;
+  supabase=mod.supabase;authHelpers=helpers;registrationHelpers=signup;modeHelpers=modes;
   supabase.auth.onAuthStateChange((_event,session)=>{
     setTimeout(()=>{void displayAccount(session?.user||null);},0);
   });
