@@ -30,7 +30,16 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .small{font-size:.76rem!important;color:#7a8b80!important}.warning{background:#f0f5f0;padding:12px 14px;border-radius:11px;font-size:.82rem!important;color:#4a6953!important}
 .row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:12px 0;padding-bottom:12px;border-bottom:1px solid #e7eeea;font-size:.83rem}.row strong{font-size:.82rem;text-align:right;overflow-wrap:anywhere}.row:last-child{border-bottom:0}
 .line-banner{padding:17px;border-radius:16px;background:#eef3ef;border:1px solid #dfe9e2;margin:16px 0}.line-banner h3{font-size:1.15rem;margin:0 0 4px}.line-banner p{margin:0}.line-banner[data-online="true"]{background:#e3f4e8;border-color:#c7ead3}
-.line-actions{display:flex;gap:8px;flex-wrap:wrap}.line-actions .btn{flex:1;min-width:140px}
+.line-actions{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:9px 0}
+.line-actions strong{font-size:.91rem;color:#2d5340}
+.line-switch{position:relative;display:inline-flex;align-items:center;cursor:pointer}
+.line-switch input{position:absolute;opacity:0;width:1px;height:1px;padding:0;margin:0}
+.line-switch .switch-track{position:relative;display:block;width:64px;height:36px;background:#98aaa0;border-radius:999px;transition:background .15s}
+.line-switch .switch-track:after{content:'';position:absolute;left:4px;top:4px;width:28px;height:28px;background:#fff;border-radius:50%;box-shadow:0 2px 5px #0002;transition:transform .15s}
+.line-switch input:checked+.switch-track{background:#18834f}
+.line-switch input:checked+.switch-track:after{transform:translateX(28px)}
+.line-switch input:focus-visible+.switch-track{outline:3px solid #8bceaa;outline-offset:3px}
+.line-switch input:disabled+.switch-track{opacity:.5;cursor:wait}
 .orders-placeholder{border:1px dashed #cedbd1;background:#f7faf7;padding:19px;border-radius:15px;margin-top:13px}.orders-placeholder strong{display:block;font-size:.86rem}.orders-placeholder p{margin:6px 0 0}
 .footer{display:flex;justify-content:center;gap:16px;font-size:.79rem;margin-top:25px;padding-top:22px;border-top:1px solid #dfebe2}
 @media(min-width:650px){.wrap{padding:0 25px 90px}.topbar{margin:0 -25px;padding:20px 25px}.hero h1{font-size:2.5rem}.cards{grid-template-columns:1fr 1fr}.panel{padding:25px}}
@@ -129,8 +138,11 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
         <p id="lineDescription">Вы сейчас недоступны для новых поездок.</p>
       </div>
       <div class="line-actions">
-        <button id="goOnline" class="btn" type="button">Выйти на линию</button>
-        <button id="goOffline" class="btn alt" type="button" hidden>Завершить смену</button>
+        <strong id="lineSwitchLabel">Не на работе</strong>
+        <label class="line-switch" for="lineSwitch">
+          <input id="lineSwitch" type="checkbox" role="switch" aria-label="Водитель на работе, на линии">
+          <span class="switch-track" aria-hidden="true"></span>
+        </label>
       </div>
       <p id="lineMessage" class="message" role="status" aria-live="polite"></p>
     </section>
@@ -158,8 +170,9 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     $('lineDescription').textContent = online
       ? 'Ваш статус сохранён. Приём заказов такси пока не подключён.'
       : 'Вы не отмечены доступным водителем.';
-    $('goOnline').hidden = online;
-    $('goOffline').hidden = !online;
+    $('lineSwitch').checked = online;
+    $('lineSwitch').disabled = record?.review_status !== 'approved';
+    $('lineSwitchLabel').textContent = online ? 'На работе' : 'Не на работе';
     $('heroStatus').dataset.state = online ? 'online' : 'offline';
     $('heroStatusText').textContent = online ? 'На линии · заказы не подключены' : 'Не на линии';
   }
@@ -283,8 +296,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
         !userId || changingLine) return;
     const version = revision, uid = userId;
     changingLine = true;
-    $('goOnline').disabled = true;
-    $('goOffline').disabled = true;
+    $('lineSwitch').disabled = true;
     setMessage('lineMessage', online ? 'Выходим на линию…' : 'Завершаем смену…');
     try {
       const result = await driverApi.setDriverAvailability(client, online);
@@ -302,12 +314,17 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
         setMessage('lineMessage', 'Не удалось обновить линию. Проверьте сеть.');
     } finally {
       changingLine = false;
-      $('goOnline').disabled = false;
-      $('goOffline').disabled = false;
+      if(revision === version && userId === uid) {
+        // Revert the visual switch to the last server-confirmed value on error.
+        $('lineSwitch').checked = Boolean(currentDriver?.is_online);
+        $('lineSwitch').disabled = currentDriver?.review_status !== 'approved';
+      }
     }
   }
-  $('goOnline').addEventListener('click', () => { void changeLine(true); });
-  $('goOffline').addEventListener('click', () => { void changeLine(false); });
+  $('lineSwitch').addEventListener('change', () => {
+    const desired = $('lineSwitch').checked;
+    void changeLine(desired);
+  });
   $('reloadDriver').addEventListener('click', () => { void loadDriver(); });
 
   try {
