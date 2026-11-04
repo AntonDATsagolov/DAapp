@@ -186,6 +186,10 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     $('lineSwitch').checked = online;
     $('lineSwitch').disabled = record?.review_status !== 'approved';
     $('lineSwitchLabel').textContent = online ? 'На работе' : 'Не на работе';
+    if(!online && !refreshingOrders) {
+      $('driverOrderList').replaceChildren();
+      $('ordersNotice').textContent = 'Линия выключена — новые заказы не поступают.';
+    }
     $('heroStatus').dataset.state = online ? 'online' : 'offline';
     $('heroStatusText').textContent = online ? 'На линии · принимает заказы' : 'Не на линии';
   }
