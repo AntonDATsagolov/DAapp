@@ -177,18 +177,21 @@ begin
   end if;
 end $$;
 reset role;
+-- Temporary test-only helper accepts psql variable from SQL outside DO blocks
+-- while executing the RPC under the calling authenticated driver's identity.
+create function pg_temp.expect_cancelled_unavailable(p_id uuid)
+returns void language plpgsql as $
+begin
+  begin
+    perform public.daapp_taxi_accept_order(p_id);
+    raise exception 'Driver accepted cancelled order' using errcode='XX000';
+  exception when no_data_found then null;
+  end;
+end $;
 set role authenticated;
 set request.jwt.claim.sub='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 select public.daapp_driver_set_online(true);
-do $$
-begin
-  begin
-    perform public.daapp_taxi_accept_order(
-      (select id from public.daapp_taxi_orders where pickup='Shieli market main gate'));
-    raise exception 'Driver accepted cancelled order';
-  exception when no_data_found then null;
-  end;
-end $$;
+select pg_temp.expect_cancelled_unavailable(:'second_order_id'::uuid);
 reset role;
 
 \echo 'Taxi: completed order recorded and direct writes stay denied'
