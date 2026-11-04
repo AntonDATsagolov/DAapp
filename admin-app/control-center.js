@@ -1,7 +1,7 @@
 // DAapp Control Center: readonly overview for moderators; audited, server-side
 // settings and account controls for explicitly bootstrapped architects only.
 export function createControlCenter(client, ui) {
-  let adminId=null, generation=0, architect=false, page=0, busy=false;
+  let adminId=null, generation=0, memberRequest=0, architect=false, page=0, busy=false;
   const $=id=>ui[id];
   const money=(n)=>typeof n==='number'?n.toLocaleString('ru-RU'):String(n??'—');
   const message=(id,s)=>{$(id).textContent=s};
@@ -28,7 +28,7 @@ export function createControlCenter(client, ui) {
   const flag=(v)=>v?'Включено':'Выключено';
   function reset(id) {
     adminId=id||null;
-    generation++;
+    generation++;memberRequest++;
     architect=false;page=0;busy=false;
     $('controlMetrics').replaceChildren();
     $('memberRegistry').replaceChildren();
@@ -69,7 +69,7 @@ export function createControlCenter(client, ui) {
   }
   async function loadMembers() {
     if(!adminId||busy)return;
-    const stamp=++generation,uid=adminId;
+    const stamp=generation,requestId=++memberRequest,uid=adminId;
     $('memberSearchButton').disabled=true;
     message('memberRegisterStatus','Загружаем пользователей…');
     const {data,error}=await client.rpc('daapp_admin_member_register',{
@@ -77,7 +77,7 @@ export function createControlCenter(client, ui) {
       p_filter:$('memberFilter').value,
       p_limit:40,p_offset:page*40
     });
-    if(stamp!==generation||uid!==adminId)return;
+    if(stamp!==generation||requestId!==memberRequest||uid!==adminId)return;
     $('memberRegistry').replaceChildren();
     $('memberSearchButton').disabled=false;
     if(error){
