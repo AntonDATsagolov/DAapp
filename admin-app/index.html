@@ -58,6 +58,26 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
 .check-row strong{display:block;font-size:.82rem}
 .check-row span{display:block;font-size:.76rem;color:#516a5b;margin-top:4px;overflow-wrap:anywhere}
 .check-row[data-ok="false"] span{color:#944040}
+.control-nav{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}
+.control-nav a{background:#e8f1eb;padding:9px 12px;border-radius:10px;font-size:.8rem;font-weight:750;text-decoration:none}
+.control-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:13px}
+.control-tile{padding:15px;background:#f1f6f2;border:1px solid #dce9de;border-radius:13px;display:flex;flex-direction:column;gap:7px}
+.control-tile-label{font-size:.72rem;color:#597060}.control-tile-value{font-size:1.5rem;letter-spacing:-.04em;color:#174f37;font-variant-numeric:tabular-nums}
+.control-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.control-row input{flex:2;min-width:180px}.control-row select{flex:1;min-width:125px;border:1px solid #c7d9cd;border-radius:11px;padding:11px;color:#183528;background:#fff;font:inherit}
+.member-list{display:grid;gap:10px;margin-top:13px}.member-card{background:#f6faf7;padding:13px 15px;border:1px solid #dce9df;border-radius:13px}
+.member-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.member-card-top strong{font-size:.92rem;overflow-wrap:anywhere}.member-pill{font-size:.7rem;border:1px solid #d4dfd5;border-radius:999px;padding:5px 9px;white-space:nowrap}
+.member-pill[data-state=rejected]{background:#fff0ed;color:#a23c3c}.member-pill[data-state=pending]{background:#fff5df;color:#856126}.member-pill[data-state=approved]{background:#e4f3e8;color:#23613c}
+.member-meta{display:grid;gap:4px;margin:8px 0;font-size:.78rem;color:#607a69;overflow-wrap:anywhere}
+.control-actions{margin-top:10px}.btn.danger{background:#934343}
+.control-switch{display:flex;gap:10px;align-items:center;font-weight:650;font-size:.86rem;margin-top:13px}
+.control-switch input{min-height:19px;width:19px;min-width:19px}
+.audit-list{display:grid;gap:8px;margin:12px 0}
+.audit-row{padding:10px;background:#f6faf7;border-radius:11px;font-size:.75rem;display:grid;gap:4px}
+.audit-row span{color:#607767}
+#architectControls{border-left:3px solid #3e8662}
+@media(min-width:720px){.control-overview{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(min-width:740px){main{padding:32px 25px 90px}.grid{grid-template-columns:1fr 1.05fr;align-items:start}.card{padding:23px}h1{font-size:2rem}}
 </style>
 </head>
@@ -67,17 +87,21 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
     <a class="logo" href="../client-app/">DAapp.</a>
     <span class="eyebrow">АДМИНИСТРИРОВАНИЕ · ШИЕЛИ</span>
   </header>
-  <h1>Проверка организаций</h1>
-  <p>Только уполномоченные администраторы могут просматривать заявки, отклонять их и публиковать проверенные точки на карте.</p>
+  <h1>Центр управления DAapp</h1>
+  <p>Пользователи, заявки, транспорт, организации и состояние приложения. Действия выполняются только с разрешением сервера, изменения архитектора записываются в аудит.</p>
 
   <section id="loginPanel" class="card">
     <h2>Вход администратора</h2>
     <p>Вход только для уже существующих аккаунтов. Административные права назначаются отдельно в Supabase, саморегистрация здесь отключена.</p>
     <form id="loginForm">
-      <label for="email">Адрес электронной почты</label>
-      <input id="email" type="email" placeholder="name@example.com" autocomplete="email" required>
-      <button id="loginButton" class="btn block" type="submit" disabled>Получить ссылку для входа</button>
+      <label for="email">Адрес электронной почты администратора</label>
+      <input id="email" type="email" placeholder="name@example.com" autocomplete="username" required>
+      <label for="adminPassword">Пароль</label>
+      <input id="adminPassword" type="password" autocomplete="current-password" minlength="10" required placeholder="Ваш пароль">
+      <button id="loginButton" class="btn block" type="submit" disabled>Войти по паролю</button>
     </form>
+    <p class="note">В обычных случаях письмо не требуется. Если ранее входили только по ссылке и пароля ещё нет — используйте кнопку ниже один раз, затем задайте пароль в кабинете.</p>
+    <button id="magicLinkButton" class="btn alt block" type="button" disabled>Получить ссылку для первого входа</button>
     <p id="loginStatus" class="status" role="status" aria-live="polite">Проверяем сессию…</p>
   </section>
 
@@ -90,21 +114,77 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
   </section>
 
   <section id="adminPanel" hidden>
-    <div class="card">
+    <nav class="control-nav" aria-label="Разделы управления">
+      <a href="#overview">Сводка</a><a href="#members">Пользователи</a>
+      <a href="#applications">Организации</a><a href="#drivers">Водители</a>
+      <a href="#diagnostics">Диагностика</a><a href="#architectControls">Архитектор</a>
+    </nav>
+    <div class="card" id="overview">
       <strong id="adminEmail"></strong>
+      <p id="adminRights" class="note">Проверяем права аккаунта…</p>
       <p class="note">При одобрении проверьте право заявителя представлять организацию, её название, адрес и точное положение. Публикация сразу делает место доступным всем пользователям DAapp.</p>
       <button id="refreshButton" class="btn alt" type="button">Обновить очередь</button>
       <button id="logoutButton" class="btn alt" type="button">Выйти</button>
       <p id="queueStatus" class="status" role="status" aria-live="polite"></p>
     </div>
-    <section class="card" aria-label="Диагностика подключения">
+    <section class="card" aria-label="Общая статистика DAapp">
+      <h2>Сводка работы DAapp</h2>
+      <p>Показатели сервера: количество аккаунтов, подтверждений, ожидающих анкет и опубликованных организаций. Статистика не выдумывается.</p>
+      <button id="refreshDashboard" class="btn alt" type="button">Обновить статистику</button>
+      <p id="controlDashboardStatus" class="status" role="status" aria-live="polite"></p>
+      <div id="controlMetrics" class="control-overview" aria-label="Ключевые показатели"></div>
+    </section>
+    <section id="members" class="card" aria-label="Реестр всех пользователей">
+      <h2>Все пользователи</h2>
+      <p>Поиск по логину, e-mail или телефону. Показываются статусы, подтверждение почты, интересы, водительские и бизнес-заявки. Это закрытая часть админ-панели.</p>
+      <div class="control-row">
+        <input id="memberSearch" type="search" placeholder="Логин, e-mail, телефон" aria-label="Поиск пользователей">
+        <select id="memberFilter" aria-label="Фильтр статуса">
+          <option value="all">Все</option><option value="approved">Активные</option>
+          <option value="pending">Ожидают</option><option value="rejected">Ограничены</option>
+          <option value="legacy">Старые аккаунты</option>
+        </select>
+        <button id="memberSearchButton" class="btn alt" type="button">Найти</button>
+      </div>
+      <p id="memberRegisterStatus" class="status" role="status" aria-live="polite"></p>
+      <div id="memberRegistry" class="member-list" aria-label="Список аккаунтов"></div>
+      <div class="control-row">
+        <button id="membersPrev" class="btn alt" type="button">Назад</button>
+        <button id="membersNext" class="btn alt" type="button">Следующие</button>
+      </div>
+    </section>
+    <section id="architectControls" class="card" hidden aria-label="Управление архитектурой">
+      <h2>Режим архитектора</h2>
+      <p>Изменять глобальные параметры и блокировать аккаунты может только доверенный архитектор. Любое изменение сохраняется на сервере и записывается в журнал.</p>
+      <div class="control-switch"><input id="controlAutoApprove" type="checkbox"><label for="controlAutoApprove" style="margin:0">Автоматически открывать обычный доступ после подтверждения e-mail</label></div>
+      <div class="control-switch"><input id="controlDirectoryEnabled" type="checkbox"><label for="controlDirectoryEnabled" style="margin:0">Разрешить справочник телефонов (только по согласию владельца)</label></div>
+      <button id="controlSaveSettings" class="btn block" type="button">Сохранить настройки</button>
+      <p id="controlSettingsStatus" class="status" role="status" aria-live="polite"></p>
+      <h2 style="margin-top:24px">Журнал действий</h2>
+      <button id="refreshAudit" type="button" class="btn alt">Обновить журнал</button>
+      <p id="controlAuditStatus" class="status" role="status" aria-live="polite"></p>
+      <div id="controlAudit" class="audit-list"></div>
+    </section>
+    <section class="card" aria-label="Настройка пароля администратора">
+      <h2>Безопасный вход без постоянных писем</h2>
+      <p>Если раньше входили только по ссылке, назначьте пароль своему существующему аккаунту. Затем используйте e-mail + пароль вверху этой страницы. Это не создаёт ещё один аккаунт.</p>
+      <form id="passwordSetupForm">
+        <label for="newAdminPassword">Новый пароль (не менее 12 символов)</label>
+        <input id="newAdminPassword" type="password" autocomplete="new-password" minlength="12" required>
+        <label for="confirmAdminPassword">Повторите пароль</label>
+        <input id="confirmAdminPassword" type="password" autocomplete="new-password" minlength="12" required>
+        <button id="saveAdminPassword" class="btn alt block" type="submit">Установить / изменить пароль</button>
+        <p id="adminPasswordStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section id="diagnostics" class="card" aria-label="Диагностика подключения">
       <h2>Проверка системы без изменений данных</h2>
       <p>Проверим действующую авторизацию, права администратора, очередь заявок и публичный каталог. Тест не создаёт, не одобряет и не удаляет организации.</p>
       <button id="systemCheckButton" class="btn alt" type="button">Проверить подключение компонентов</button>
       <p id="systemCheckStatus" class="status" role="status" aria-live="polite">Проверка ещё не выполнялась.</p>
       <div id="systemCheckResults" class="check-results" aria-label="Результаты проверки"></div>
     </section>
-    <div class="grid">
+    <div class="grid" id="applications">
       <section class="card">
         <h2>Ожидают проверки</h2>
         <div id="queue" class="queue" aria-label="Заявки на модерацию"></div>
@@ -152,7 +232,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       <p id="accountQueueStatus" class="status" role="status" aria-live="polite">Проверяем регистрации…</p>
       <div id="accountQueue" class="driver-queue" aria-label="Заявки новых пользователей"></div>
     </section>
-    <section class="card" aria-label="Проверка водителей">
+    <section class="card" id="drivers" aria-label="Проверка водителей">
       <h2>Заявки водителей Шиели</h2>
       <p>Проверяйте личность, водительское удостоверение, автомобиль и право на перевозки до допуска к линии. Подача заявки не даёт права принимать заказы.</p>
       <button id="refreshDrivers" class="btn alt" type="button">Обновить заявки водителей</button>
@@ -165,7 +245,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
 <script type="module">
   const $ = (id) => document.getElementById(id);
   const loginPanel = $('loginPanel'), accessPanel = $('accessPanel'), adminPanel = $('adminPanel');
-  let client, readChecks, memberModerator, activeUserId, epoch = 0, selected = null, queue = [], busy = false, driverBusy = false;
+  let client, readChecks, memberModerator, controlCenter, activeUserId, epoch = 0, selected = null, queue = [], busy = false, driverBusy = false;
   const categoryNames = { shop:'Магазин', cafe:'Кафе', beauty:'Красота', hotel:'Гостиница', taxi:'Такси' };
 
   function showState(state) {
@@ -247,6 +327,7 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       if (stamp !== epoch || uid !== activeUserId) return;
       $('driverQueue').replaceChildren();
     if (memberModerator) memberModerator.reset(null);
+    if (controlCenter) controlCenter.reset(null);
       const list = Array.isArray(data) ? data : [];
       $('driverQueueStatus').textContent = list.length
         ? 'Ожидают проверки: ' + list.length
@@ -366,6 +447,10 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
         memberModerator.reset(user.id);
         void memberModerator.refresh();
       }
+      if (controlCenter) {
+        controlCenter.reset(user.id);
+        controlCenter.load();
+      }
       void loadQueue();
       void loadDriverQueue();
     } catch (error) {
@@ -474,8 +559,9 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
   }
 
   try {
-    const [{supabase}, {runAdminReadChecks}, {createAccountModerator}] = await Promise.all([
-      import('../shared/supabase.js'), import('./checks.js'), import('./accounts.js')
+    const [{supabase}, {runAdminReadChecks}, {createAccountModerator}, {createControlCenter}] = await Promise.all([
+      import('../shared/supabase.js'), import('./checks.js'), import('./accounts.js'),
+      import('./control-center.js')
     ]);
     client = supabase;
     readChecks = runAdminReadChecks;
@@ -484,27 +570,81 @@ footer{margin-top:28px;text-align:center;font-size:.79rem}
       status:$('accountQueueStatus'),
       refreshButton:$('refreshAccounts')
     });
+    controlCenter = createControlCenter(client,{
+      controlMetrics:$('controlMetrics'),
+      refreshDashboard:$('refreshDashboard'),
+      controlDashboardStatus:$('controlDashboardStatus'),
+      memberSearch:$('memberSearch'),memberFilter:$('memberFilter'),
+      memberSearchButton:$('memberSearchButton'),memberRegisterStatus:$('memberRegisterStatus'),
+      memberRegistry:$('memberRegistry'),membersPrev:$('membersPrev'),membersNext:$('membersNext'),
+      architectControls:$('architectControls'),controlAutoApprove:$('controlAutoApprove'),
+      controlDirectoryEnabled:$('controlDirectoryEnabled'),
+      controlSaveSettings:$('controlSaveSettings'),controlSettingsStatus:$('controlSettingsStatus'),
+      controlAudit:$('controlAudit'),controlAuditStatus:$('controlAuditStatus'),
+      refreshAudit:$('refreshAudit'),adminRights:$('adminRights')
+    });
     client.auth.onAuthStateChange((_event,session) =>
       setTimeout(() => { void showSession(session); },0));
     const { data,error } = await client.auth.getSession();
     if (error) throw error;
     await showSession(data.session);
     $('loginButton').disabled = false;
-    $('loginForm').addEventListener('submit',async (event)=>{
+    $('magicLinkButton').disabled = false;
+    $('loginForm').addEventListener('submit',async(event)=>{
       event.preventDefault();
-      $('loginButton').disabled = true;
-      $('loginStatus').textContent = 'Отправляем ссылку…';
-      try {
-        const {error} = await client.auth.signInWithOtp({
-          email: $('email').value.trim(),
-          options: { emailRedirectTo: new URL('./',location.href).href, shouldCreateUser: false }
+      $('loginButton').disabled=true;
+      $('loginStatus').textContent='Проверяем пароль…';
+      try{
+        const {error}=await client.auth.signInWithPassword({
+          email:$('email').value.trim(),password:$('adminPassword').value
         });
-        if (error) throw error;
-        $('loginStatus').textContent = 'Откройте письмо со ссылкой для входа.';
-      } catch(error) {
-        console.warn('Admin sign-in error',error?.code || 'network');
-        $('loginStatus').textContent = 'Не удалось отправить письмо. Проверьте Email и Redirect URLs.';
-      } finally { $('loginButton').disabled = false; }
+        if(error)throw error;
+        $('loginStatus').textContent='Вход выполнен. Проверяем права администратора…';
+      }catch(error){
+        console.warn('Admin password login error',error?.code||'invalid_credentials');
+        $('loginStatus').textContent='Не удалось войти. Проверьте e-mail и пароль. Если пароль ещё не установлен, используйте ссылку для первого входа.';
+      }finally{
+        $('adminPassword').value='';
+        $('loginButton').disabled=false;
+      }
+    });
+    $('magicLinkButton').addEventListener('click',async()=>{
+      const email=$('email').value.trim();
+      if(!email||!$('email').checkValidity()){
+        $('loginStatus').textContent='Укажите действующий e-mail своего администраторского аккаунта.';
+        return;
+      }
+      $('magicLinkButton').disabled=true;
+      $('loginStatus').textContent='Отправляем ссылку только для существующего аккаунта…';
+      try{
+        const {error}=await client.auth.signInWithOtp({
+          email,
+          options:{emailRedirectTo:new URL('./',location.href).href,shouldCreateUser:false}
+        });
+        if(error)throw error;
+        $('loginStatus').textContent='Проверьте почту. После входа установите пароль в админ-панели.';
+      }catch{
+        $('loginStatus').textContent='Не удалось отправить письмо. Проверьте настройки Email в Supabase.';
+      }finally{$('magicLinkButton').disabled=false;}
+    });
+    $('passwordSetupForm').addEventListener('submit',async(event)=>{
+      event.preventDefault();
+      if(!activeUserId)return;
+      const value=$('newAdminPassword').value;
+      if(value.length<12||value!==$('confirmAdminPassword').value){
+        $('adminPasswordStatus').textContent='Пароли должны совпадать и содержать не менее 12 символов.';
+        return;
+      }
+      $('saveAdminPassword').disabled=true;
+      $('adminPasswordStatus').textContent='Обновляем пароль…';
+      try{
+        const {error}=await client.auth.updateUser({password:value});
+        if(error)throw error;
+        $('adminPasswordStatus').textContent='Пароль сохранён. Теперь можно входить по e-mail и паролю.';
+        $('passwordSetupForm').reset();
+      }catch{
+        $('adminPasswordStatus').textContent='Не удалось изменить пароль. Возможно, нужна повторная авторизация.';
+      }finally{$('saveAdminPassword').disabled=false;}
     });
     $('refreshButton').addEventListener('click',()=>{ void loadQueue(); });
     $('refreshDrivers').addEventListener('click',()=>{ void loadDriverQueue(); });
