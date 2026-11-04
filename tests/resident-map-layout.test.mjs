@@ -33,8 +33,9 @@ test('Taxi filter remains usable without drivers or businesses',()=>{
   const places=read('client-app/places.js');
   assert.match(html,/data-category="taxi"/);
   assert.match(html,/id="taxiInfo"/);
-  assert.match(html,/независимо от количества зарегистрированных водителей/);
-  assert.match(html,/Список свободных водителей и заказ поездок пока не подключены/);
+  assert.match(html,/id="taxiAvailable"/);
+  assert.match(html,/Водители самостоятельно отмечают выход на линию/);
+  assert.match(html,/Заказ поездки пока не подключён/);
   assert.match(map,/selectedCategory !== 'taxi'/);
   assert.match(map,/categoryNotice\.hidden = false/);
   assert.match(map,/Опубликованных служб такси пока нет/);
