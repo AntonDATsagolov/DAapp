@@ -228,3 +228,31 @@ button:disabled{opacity:.5;cursor:wait}
 .place-working[data-working="true"]::before{background:#22a461}
 .place-working[data-working="false"]{background:#edf0ef;color:#52645a}
 .taxi-info #taxiAvailable{font-weight:800;color:#225e44}
+
+/* DAapp taxi order dialog: independent of fullscreen Leaflet map overlays. */
+.taxi-order-open{display:block;width:100%;border:0;border-radius:10px;
+  margin:9px 0 0;min-height:40px;background:#17664b;color:#fff;
+  padding:9px 12px;font-size:.82rem;font-weight:800}
+.taxi-dialog{width:min(94vw,510px);max-height:calc(92dvh - env(safe-area-inset-top,0px));
+  border:1px solid #dce7df;border-radius:18px;padding:20px;
+  box-shadow:0 20px 60px #1d342c61;color:#244032;overflow-y:auto}
+.taxi-dialog::backdrop{background:#0f2921ad}
+.taxi-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.taxi-dialog h2{font-size:1.25rem;margin:0;font-weight:850}
+.taxi-dialog h3{font-size:.98rem;margin:24px 0 12px}
+.taxi-dialog-head button{background:#e9f1eb;border:0;border-radius:10px;
+  min-width:42px;min-height:42px;font-size:1.2rem;color:#25553d}
+.taxi-dialog form label{display:block;margin:14px 0 6px;font-weight:760;font-size:.83rem}
+.taxi-dialog textarea{width:100%;padding:11px;font:inherit;resize:vertical;
+  border-radius:12px;border:1px solid #c7d6ce;color:#203e2f}
+.taxi-dialog textarea:focus-visible,.taxi-dialog button:focus-visible{
+  outline:3px solid #81c4a1;outline-offset:2px}
+.taxi-order-list{display:grid;gap:9px}
+.taxi-order-card{border:1px solid #dfe7e0;background:#f6faf7;
+  border-radius:12px;padding:13px}
+.taxi-order-card strong{font-size:.9rem;color:#175b41}
+.taxi-order-card p{font-size:.83rem;margin:7px 0;line-height:1.5;
+  overflow-wrap:anywhere}
+.taxi-cancel{min-height:38px;border-radius:10px;border:1px solid #e0bbbb;
+  background:#fff7f7;color:#9a3333;padding:8px 12px;font-weight:700}
+.taxi-dialog .action{margin-top:10px}
