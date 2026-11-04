@@ -63,6 +63,8 @@ async function startApp(app) {
     '../shared/supabase.js': {supabase},
     './map.js': {initVillageMap: async () => ({invalidateSize(){}})},
     './profile.js': {createProfileController: () => ({show(){},clear(){}})},
+    './taxi-orders.js': {},
+    './orders.js': {},
     './submissions.js': {},
     './work-status.js': {},
     './driver.js': {},
