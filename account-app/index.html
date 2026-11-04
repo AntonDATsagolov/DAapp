@@ -43,7 +43,7 @@ footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
   <header><a class="logo" href="../client-app/">DAapp.</a><span style="font-size:.76rem;color:#64816d">Шиели · Шиелі</span></header>
   <div class="tag">Один аккаунт — все возможности</div>
   <h1>Регистрация и вход</h1>
-  <p>Сначала зарегистрируйтесь, подтвердите e-mail и дождитесь решения администратора. SMS не требуется. Житель или гость сможет дополнительно стать водителем или предпринимателем.</p>
+  <p>Один аккаунт для всех задач. После подтверждения e-mail житель или гость получает обычный доступ; водитель и предприниматель затем заполняют дополнительные анкеты. SMS не требуется.</p>
 
   <section id="guestPanel">
     <div class="tabbar" role="group" aria-label="Регистрация или вход">
@@ -52,7 +52,7 @@ footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
     </div>
     <section id="signupPanel" class="card">
       <h2>Новый аккаунт</h2>
-      <p class="info">Заявку проверит администратор DAapp. Пока она не одобрена, закрытые функции недоступны.</p>
+      <p class="info">При включённом автоматическом доступе обычный аккаунт активируется после подтверждения e-mail. Для работы водителем и публикации бизнеса нужна отдельная проверка.</p>
       <form id="signupForm">
         <label for="signupUsername">Логин</label>
         <input id="signupUsername" autocomplete="username" required minlength="4" maxlength="24" pattern="[a-zA-Z][a-zA-Z0-9_]{3,23}" placeholder="my_login">
@@ -64,10 +64,17 @@ footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
         <p class="hint">Номер пока не подтверждается SMS. По умолчанию другим людям он не виден.</p>
         <label for="signupAge">Возраст</label>
         <input id="signupAge" type="number" min="13" max="120" inputmode="numeric" required placeholder="Например, 25">
-        <label for="signupResidency">Кто вы?</label>
+        <label for="signupResidency">Ваш статус в Шиели</label>
         <select id="signupResidency" required>
           <option value="">Выберите</option><option value="resident">Житель Шиели</option><option value="guest">Гость Шиели</option>
         </select>
+        <label for="signupGoal">Что вы планируете делать сначала?</label>
+        <select id="signupGoal" required>
+          <option value="resident">Покупать, заказывать, пользоваться городом</option>
+          <option value="business">Открыть кабинет предпринимателя</option>
+          <option value="driver">Зарегистрироваться водителем / таксистом</option>
+        </select>
+        <p class="hint">Выбор не ограничивает возможности. В любой момент можно стать и водителем, и владельцем бизнеса, оставаясь жителем или гостем.</p>
         <label for="signupPassword">Пароль</label>
         <input id="signupPassword" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
         <label for="signupPasswordAgain">Повторите пароль</label>
@@ -117,7 +124,7 @@ footer{margin:32px 0;text-align:center;font-size:.8rem;color:#667b6e}
     </section>
     <section id="avatarPanel" class="card">
       <h2>Фото профиля</h2>
-      <p>После подтверждения e-mail можно загрузить аватар. Он будет виден другим пользователям, если ваш аккаунт одобрен и вы включите отображение в справочнике.</p>
+      <p>После подтверждения e-mail можно загрузить аватар. Публично его увидят только пользователи справочника, если вы разрешили показывать контакт.</p>
       <form id="avatarForm">
         <label for="avatarFile">Выбрать фото (JPG, PNG, WebP, до 1,5 МБ)</label>
         <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" required>
@@ -171,13 +178,13 @@ $('signupForm').addEventListener('submit',async(event)=>{
     const res=await registrationHelpers.submitEmailRegistration(supabase,{
       username:$('signupUsername').value,email:$('signupEmail').value,
       phone:$('signupPhone').value,age:$('signupAge').value,
-      residency:$('signupResidency').value,
+      residency:$('signupResidency').value,goal:$('signupGoal').value,
       publishPhone:$('signupPublishPhone').checked,
       password:$('signupPassword').value,confirmPassword:$('signupPasswordAgain').value
     },new URL('./',location.href).href);
     if(res.error){say('signupMessage',res.error);return;}
     $('signupPassword').value='';$('signupPasswordAgain').value='';
-    say('signupMessage','Заявка создана. Проверьте почту, подтвердите e-mail и дождитесь одобрения администратора. После подтверждения добавьте аватар.');
+    say('signupMessage','Аккаунт создан. Подтвердите e-mail один раз: обычные функции откроются автоматически, если SQL 010 настроен. После этого можно добавить аватар и заполнить анкету бизнеса или водителя.');
     if(res.hasSession) {
       say('signupMessage','Аккаунт создан, но подтверждение почты обязательно для одобрения. Включите Confirm email в настройках Supabase.');
       await reloadAuthenticatedUser();
@@ -238,14 +245,20 @@ async function displayAccount(user) {
   const status=decision.status||'pending';
   $('decisionStatus').dataset.status=status;
   say('decisionStatus',status==='approved'?'Аккаунт одобрен. Добро пожаловать в DAapp!'
-    :status==='pending'?'Заявка ожидает проверки администратора. Сервисы пока закрыты.'
+    :status==='pending'?'Аккаунт пока не активирован. Подтвердите e-mail либо дождитесь проверки, если автодоступ отключён.'
     :'Заявка отклонена администратором.');
   say('memberInfo',decision.legacy?'Вы зарегистрировались до введения проверки аккаунтов.'
     :('Тип: '+(decision.residency==='resident'?'житель':decision.residency==='guest'?'гость':'не выбран')+
       '. Номер для связи: '+(decision.phone_number||'не указан')+
       '. SMS пока не используется.'));
   $('approvedLinks').hidden=status!=='approved';
-  $('continueLink').href=authHelpers.NEXT_DESTINATIONS[authHelpers.safeDestination(next)];
+  const initialGoal=['resident','driver','business'].includes(user.user_metadata?.daapp_registration?.goal)
+    ? user.user_metadata.daapp_registration.goal:'resident';
+  const destination=next||initialGoal;
+  $('continueLink').href=authHelpers.NEXT_DESTINATIONS[authHelpers.safeDestination(destination)];
+  $('continueLink').textContent=destination==='business'
+    ?'Перейти к оформлению бизнеса':destination==='driver'
+      ?'Заполнить анкету водителя':'Открыть DAapp';
   $('avatarPanel').hidden=!user.email_confirmed_at || Boolean(decision.legacy);
   $('phoneOptions').hidden=status!=='approved'||decision.legacy||
     Number(membership.data?.age_at_registration)<18;
