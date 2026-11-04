@@ -148,19 +148,23 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     </section>
   </section>
 
-  <section class="panel" aria-label="Заказы">
-    <h2>Заказы</h2>
-    <p class="panel-lead">Это раздел будущих заказов для водителей Шиели.</p>
-    <div class="orders-placeholder">
-      <strong>Заказы пока не подключены</strong>
-      <p>Мы ещё разрабатываем создание заявок пассажирами и передачу водителям. Сейчас реальных заказов в приложении нет — фальшивые поездки не отображаются.</p>
-    </div>
+  <section id="driverOrdersPanel" class="panel" aria-label="Новые заказы такси" hidden>
+    <h2>🚕 Заказы такси</h2>
+    <p class="panel-lead">При включённой линии новые заявки появляются здесь автоматически. Только один водитель может принять одну поездку.</p>
+    <p id="ordersNotice" class="orders-notice" role="status" aria-live="polite">Проверяем новые заказы…</p>
+    <button id="enableOrdersNotification" class="btn alt" type="button">Разрешить уведомления браузера</button>
+    <p class="small">Уведомления работают, пока кабинет открыт. Push на закрытое приложение будет подключён отдельно.</p>
+    <div id="driverOrderList" class="driver-order-list"></div>
+    <p id="ordersMessage" class="message" role="status" aria-live="polite"></p>
+    <button id="refreshDriverOrders" class="btn alt" type="button">Обновить заказы</button>
   </section>
   <footer class="footer"><a href="../client-app/">Карта Шиели</a><a href="../business-app/">Для предпринимателей</a><a href="../diagnostics/">Диагностика</a></footer>
 </main>
 <script type="module">
   const $ = (id) => document.getElementById(id);
-  let client, driverApi, userId = undefined, revision = 0, currentDriver = null, changingLine = false;
+  let client, driverApi, ordersApi, userId = undefined, revision = 0,
+    currentDriver = null, changingLine = false;
+  let ordersTimer = null, refreshingOrders = false, seenPending = null;
   const setMessage = (id, value) => { $(id).textContent = value; };
 
   function updateLineState(record) {
@@ -168,13 +172,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     $('lineBanner').dataset.online = String(online);
     $('lineTitle').textContent = online ? 'Вы на линии' : 'Не на линии';
     $('lineDescription').textContent = online
-      ? 'Ваш статус сохранён. Приём заказов такси пока не подключён.'
+      ? 'Вам будут поступать новые заказы в открытом кабинете водителя.'
       : 'Вы не отмечены доступным водителем.';
     $('lineSwitch').checked = online;
     $('lineSwitch').disabled = record?.review_status !== 'approved';
     $('lineSwitchLabel').textContent = online ? 'На работе' : 'Не на работе';
     $('heroStatus').dataset.state = online ? 'online' : 'offline';
-    $('heroStatusText').textContent = online ? 'На линии · заказы не подключены' : 'Не на линии';
+    $('heroStatusText').textContent = online ? 'На линии · принимает заказы' : 'Не на линии';
   }
 
   function renderDriver(record) {
@@ -186,6 +190,18 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       ? (driverApi.REVIEW_LABELS[status] || 'Статус неизвестен')
       : 'Анкета не подана';
     $('linePanel').hidden = status !== 'approved';
+    $('driverOrdersPanel').hidden = status !== 'approved';
+    if (status==='approved') {
+      if(ordersTimer===null) {
+        ordersTimer=window.setInterval(()=>{void refreshDriverOrders()},12000);
+      }
+      void refreshDriverOrders();
+    } else {
+      if(ordersTimer!==null)window.clearInterval(ordersTimer);
+      ordersTimer=null;
+      seenPending=null;
+      $('driverOrderList').replaceChildren();
+    }
     if (!record) {
       updateLineState(null);
       setMessage('driverMessage', 'Анкеты пока нет. Заполни заявку ниже.');
@@ -201,7 +217,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       : status === 'rejected'
         ? 'Анкета отклонена. Для уточнения причин свяжитесь с администрацией DAapp.'
         : status === 'approved'
-          ? 'Анкета подтверждена. Вы можете переключать статус линии. Заказы пассажиров появятся после подключения сервиса.'
+          ? 'Анкета подтверждена. Для получения новых заказов включите «На работе».'
           : 'Неизвестное состояние анкеты. Обратитесь к администрации.';
     $('reviewExplanation').textContent = explanation;
     setMessage('driverMessage', status === 'approved'
@@ -235,6 +251,11 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
     userId = nextId;
     revision++;
     currentDriver = null;
+    if(ordersTimer!==null)window.clearInterval(ordersTimer);
+    ordersTimer=null;
+    seenPending=null;
+    $('driverOrderList').replaceChildren();
+    $('driverOrdersPanel').hidden=true;
     $('authPanel').hidden = Boolean(user);
     $('appPanel').hidden = true;
     $('approvalPanel').hidden = !user;
@@ -306,8 +327,10 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
         currentDriver = { ...currentDriver, is_online: result.is_online };
         updateLineState(currentDriver);
         setMessage('lineMessage', online
-          ? 'Статус «На линии» сохранён. Реальные заказы пока не подключены.'
-          : 'Смена завершена. Статус сохранён.');
+          ? 'Статус «На линии» сохранён. Новые заказы будут отображаться в кабинете.'
+          : 'Смена завершена. Новые заказы больше не поступают.');
+        seenPending=null;
+        void refreshDriverOrders();
       }
     } catch (error) {
       if (revision === version && userId === uid)
@@ -321,6 +344,133 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
       }
     }
   }
+
+  function notifyNewTaxiOrder() {
+    if(!currentDriver?.is_online)return;
+    const N=window.Notification;
+    if(typeof N==='function' && N.permission==='granted') {
+      try {
+        const notification=new N('DAapp — новый заказ такси',{
+          body:'Откройте кабинет водителя, чтобы принять заказ.',
+          tag:'daapp-new-taxi-order'
+        });
+        notification.onclick=()=>window.focus();
+      }catch { /* Browser may refuse native notifications; in-page alert stays. */ }
+    }
+  }
+  function renderDriverOrders(items) {
+    const list=$('driverOrderList');
+    list.replaceChildren();
+    const assigned=items.find(o=>o.status==='accepted');
+    const available=items.filter(o=>o.status==='requested');
+    const cancelled=items.filter(o=>o.status==='cancelled');
+    $('ordersNotice').textContent=currentDriver?.is_online
+      ? available.length+' новых заказов ожидают водителя.'
+      : 'Линия выключена — новые заказы не поступают.';
+    if(assigned) {
+      $('ordersNotice').textContent='У вас есть принятый заказ.';
+    }
+    const visible=assigned?[assigned,...cancelled]:[...available,...cancelled];
+    if(visible.length===0){
+      const empty=document.createElement('p');
+      empty.className='small';
+      empty.textContent=currentDriver?.is_online
+        ? 'Новых заказов пока нет. При появлении заказа он отобразится здесь.'
+        : 'Чтобы видеть новые заказы, включите «На работе».';
+      list.append(empty);
+    }
+    for(const item of visible){
+      const card=document.createElement('article');
+      card.className='driver-order-card';
+      const title=document.createElement('strong');
+      title.textContent=ordersApi.DRIVER_ORDER_STATUS[item.status]||'Заказ такси';
+      const route=document.createElement('p');
+      route.textContent='Откуда: '+item.pickup+' · Куда: '+item.destination;
+      card.append(title,route);
+      if(item.note){
+        const note=document.createElement('p');
+        note.textContent='Комментарий: '+item.note;
+        card.append(note);
+      }
+      if(item.passenger_phone && item.status==='accepted'){
+        const contact=document.createElement('p');
+        contact.textContent='Контакт пассажира: '+item.passenger_phone;
+        card.append(contact);
+      }
+      if(item.status==='requested' && !assigned){
+        const accept=document.createElement('button');
+        accept.type='button';
+        accept.className='btn';
+        accept.textContent='Принять заказ';
+        accept.addEventListener('click',async()=>{
+          accept.disabled=true;
+          const version=revision,uid=userId;
+          const result=await ordersApi.acceptDriverTaxiOrder(client,item.id);
+          if(version!==revision || uid!==userId)return;
+          setMessage('ordersMessage',result.error||'Заказ закреплён за вами.');
+          await refreshDriverOrders();
+        });
+        card.append(accept);
+      }
+      if(item.status==='accepted'){
+        const done=document.createElement('button');
+        done.type='button';done.className='btn';
+        done.textContent='Завершить поездку';
+        done.addEventListener('click',async()=>{
+          if(!window.confirm('Вы действительно завершили поездку?'))return;
+          done.disabled=true;
+          const version=revision,uid=userId;
+          const result=await ordersApi.completeDriverTaxiOrder(client,item.id);
+          if(version!==revision || uid!==userId)return;
+          setMessage('ordersMessage',result.error||'Поездка завершена.');
+          await refreshDriverOrders();
+        });
+        card.append(done);
+      }
+      list.append(card);
+    }
+  }
+  async function refreshDriverOrders() {
+    if (!client || !ordersApi || !userId || !currentDriver
+        || currentDriver.review_status!=='approved' || refreshingOrders)return;
+    const version=revision,uid=userId;
+    refreshingOrders=true;
+    try{
+      const items=await ordersApi.fetchDriverTaxiOrders(client);
+      if(version!==revision || uid!==userId)return;
+      const pending=new Set(items.filter(x=>x.status==='requested').map(x=>x.id));
+      if(seenPending!==null && [...pending].some(id=>!seenPending.has(id))){
+        notifyNewTaxiOrder();
+        setMessage('ordersMessage','Поступил новый заказ такси!');
+      }
+      seenPending=pending;
+      renderDriverOrders(items);
+    }catch(error){
+      if(version===revision && uid===userId){
+        console.warn('DAapp taxi dispatch error',error?.code||'network');
+        setMessage('ordersMessage',
+          ordersApi.driverTaxiError(error));
+        $('ordersNotice').textContent='Заказы временно недоступны.';
+      }
+    }finally{
+      refreshingOrders=false;
+    }
+  }
+  $('refreshDriverOrders').addEventListener('click',()=>{void refreshDriverOrders()});
+  $('enableOrdersNotification').addEventListener('click',async()=>{
+    if(typeof window.Notification!=='function'){
+      setMessage('ordersMessage','Браузер не поддерживает системные уведомления. Заказы остаются видны внутри DAapp.');
+      return;
+    }
+    try{
+      const permission=await window.Notification.requestPermission();
+      setMessage('ordersMessage',permission==='granted'
+        ? 'Уведомления браузера разрешены, пока кабинет открыт.'
+        : 'Уведомления браузера не разрешены. Заказы всё равно отображаются в кабинете.');
+    }catch{
+      setMessage('ordersMessage','Не удалось включить уведомления браузера.');
+    }
+  });
   $('lineSwitch').addEventListener('change', () => {
     const desired = $('lineSwitch').checked;
     void changeLine(desired);
@@ -328,11 +478,12 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
   $('reloadDriver').addEventListener('click', () => { void loadDriver(); });
 
   try {
-    const [{supabase}, api] = await Promise.all([
-      import('../shared/supabase.js'), import('./driver.js')
+    const [{supabase}, api, taxiApi] = await Promise.all([
+      import('../shared/supabase.js'), import('./driver.js'), import('./orders.js')
     ]);
     client = supabase;
     driverApi = api;
+    ordersApi = taxiApi;
     client.auth.onAuthStateChange((_event, session) => {
       setTimeout(() => showSession(session), 0);
     });
