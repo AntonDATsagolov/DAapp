@@ -345,10 +345,11 @@ test('Driver app provides functional onboarding UI instead of a Supabase placeho
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script && script.includes("import('./driver.js')"));
   assert.doesNotThrow(() => new AsyncFunction(script));
-  for (const id of ['driverForm','registrationPanel','reviewPanel','linePanel','lineSwitch','lineSwitchLabel','logoutButton','driverReviewLabel','contactPhone','vehiclePlate']) {
+  for (const id of ['driverForm','registrationPanel','reviewPanel','linePanel','lineSwitch','lineSwitchLabel','driverOrdersPanel','driverOrderList','logoutButton','driverReviewLabel','contactPhone','vehiclePlate']) {
     assert.ok(html.includes('id="' + id + '"'), 'Missing functional driver control: ' + id);
   }
-  assert.ok(html.includes('Заказы пока не подключены'));
+  assert.ok(html.includes('Заказы такси'));
+  assert.ok(html.includes("import('./orders.js')"));
   assert.ok(!html.includes('Клиент Supabase инициализирован. Функции будут добавлены поэтапно.'));
 });
 
