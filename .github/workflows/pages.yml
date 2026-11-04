@@ -115,13 +115,13 @@ jobs:
           set -euo pipefail
           base="https://antondatsagolov.github.io/DAapp"
           for app in client-app business-app driver-app admin-app; do
-            expected="shouldCreateUser: false"
             verified=0
             for attempt in $(seq 1 15); do
               if curl --fail --silent --show-error --location --max-time 15 \
                 "$base/$app/" -o /tmp/daapp-registration.html &&
                   grep -Fq "signInWithOtp" /tmp/daapp-registration.html &&
-                  grep -Fq "$expected" /tmp/daapp-registration.html; then
+                  grep -Eq 'shouldCreateUser:[[:space:]]*false' /tmp/daapp-registration.html &&
+                  { [[ "$app" != admin-app ]] || grep -Fq "auth.signInWithPassword" /tmp/daapp-registration.html; }; then
                 verified=1
                 break
               fi
@@ -131,7 +131,7 @@ jobs:
               echo "FAIL: registration/login code missing or stale for $app"
               exit 1
             fi
-            echo "PASS: $app uses legacy OTP without creating duplicate accounts"
+            echo "PASS: $app has safe sign-in / legacy recovery without creating duplicate accounts"
           done
 
       - name: Verify live unified account signup page
