@@ -13,6 +13,7 @@ test('Resident map defaults to fullscreen while retaining normal view',()=>{
   assert.match(html,/id="mapLayoutToggle"/);
   assert.match(html,/id="placesPanelToggle"/);
   assert.match(html,/id="placesBody"/);
+  assert.match(html,/id="categoryNotice"/);
   assert.match(html,/let expandedMap = true/);
   assert.match(html,/localStorage\.getItem\(LAYOUT_KEY\)/);
   assert.match(html,/localStorage\.setItem\(LAYOUT_KEY/);
@@ -35,6 +36,7 @@ test('Taxi filter remains usable without drivers or businesses',()=>{
   assert.match(html,/независимо от количества зарегистрированных водителей/);
   assert.match(html,/Список свободных водителей и заказ поездок пока не подключены/);
   assert.match(map,/selectedCategory !== 'taxi'/);
+  assert.match(map,/categoryNotice\.hidden = false/);
   assert.match(map,/Опубликованных служб такси пока нет/);
   assert.match(map,/Анкеты водителей хранятся отдельно/);
   assert.match(map,/selectedCategory = selected/);
