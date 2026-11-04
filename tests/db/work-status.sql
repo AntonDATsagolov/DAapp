@@ -32,14 +32,14 @@ begin
  exception when insufficient_privilege then null;
  end;
 end $$;
-select public.daapp_business_set_working(:'owner_place_id'::uuid,true);
+select public.daapp_business_set_working((select id from public.map_places where name='CI Approval Candidate'),true);
 do $$
 begin
  if not (select is_working from public.daapp_business_my_workplaces() limit 1) then
    raise exception 'Owner could not turn workplace on';
  end if;
  begin
-   perform public.daapp_business_set_working(:'other_place_id'::uuid,true);
+   perform public.daapp_business_set_working((select id from public.map_places where name='Mode Test Shop'),true);
    raise exception 'Owner controlled another member workplace';
  exception when insufficient_privilege then null;
  end;
@@ -72,7 +72,7 @@ begin
  exception when insufficient_privilege then null;
  end;
  begin
-   perform public.daapp_business_set_working(:'owner_place_id'::uuid,false);
+   perform public.daapp_business_set_working((select id from public.map_places where name='CI Approval Candidate'),false);
    raise exception 'Anonymous caller changed working status';
  exception when insufficient_privilege then null;
  end;
@@ -88,7 +88,7 @@ begin
    raise exception 'Non-owner read private workplace controls';
  end if;
  begin
-   perform public.daapp_business_set_working(:'owner_place_id'::uuid,false);
+   perform public.daapp_business_set_working((select id from public.map_places where name='CI Approval Candidate'),false);
    raise exception 'Non-owner changed workplace status';
  exception when insufficient_privilege then null;
  end;
@@ -117,7 +117,7 @@ reset role;
 set role authenticated;
 set request.jwt.claim.sub='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 select public.daapp_driver_set_online(false);
-select public.daapp_business_set_working(:'owner_place_id'::uuid,false);
+select public.daapp_business_set_working((select id from public.map_places where name='CI Approval Candidate'),false);
 reset role;
 do $$
 begin
