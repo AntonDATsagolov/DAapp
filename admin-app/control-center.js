@@ -115,7 +115,7 @@ export function createControlCenter(client, ui) {
         const actions=node('div','control-actions');
         const desired=u.account_status==='approved'?'rejected':'approved';
         const btn=node('button',desired==='approved'?'btn':'btn danger',
-          desired==='approved'?'Восстановить доступ':'Заблокировать');
+          desired==='approved'?'Восстановить доступ':'Ограничить доступ');
         btn.type='button';
         btn.addEventListener('click',async()=>{
           if(busy||!adminId)return;
