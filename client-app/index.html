@@ -34,6 +34,7 @@
         <p id="mapStatus" class="map-status" role="status" aria-live="polite">Загружаем карту…</p>
         <button id="mapRetry" class="map-retry" type="button" hidden>Повторить загрузку</button>
         <button id="locateButton" class="map-locate" type="button"><span aria-hidden="true">◎</span> Где я?</button>
+        <p id="categoryNotice" class="category-notice" role="status" hidden></p>
         <aside id="taxiInfo" class="taxi-info" aria-label="Сервис такси" hidden>
           <strong>🚕 Такси в Шиели</strong>
           <p>На карте показываются опубликованные службы такси. Список свободных водителей и заказ поездок пока не подключены. Раздел доступен всем жителям независимо от количества зарегистрированных водителей.</p>
@@ -134,6 +135,7 @@
     if (!active) {
       categoriesPanel.classList.remove('is-list-open');
       placesPanelToggle.setAttribute('aria-expanded', 'false');
+      placesPanelToggle.textContent = 'Список мест';
     }
     if (mapController && !mapScreen.hidden) {
       requestAnimationFrame(() => mapController.invalidateSize());
@@ -178,6 +180,7 @@
     placesRetry: $('#placesRetry'),
     placesCount: $('#placesCount'),
     taxiInfo: $('#taxiInfo'),
+    categoryNotice: $('#categoryNotice'),
     coordinateForm: $('#coordinateForm'),
     coordinateInput: $('#coordinateInput'),
     mapLocation: $('#mapLocation')
