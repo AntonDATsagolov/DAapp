@@ -35,7 +35,8 @@ test('Taxi filter remains usable without drivers or businesses',()=>{
   assert.match(html,/id="taxiInfo"/);
   assert.match(html,/id="taxiAvailable"/);
   assert.match(html,/Водители самостоятельно отмечают выход на линию/);
-  assert.match(html,/Заказ поездки пока не подключён/);
+  assert.match(html,/Заказать такси \/ Мои поездки/);
+  assert.match(html,/id="taxiDialog"/);
   assert.match(map,/selectedCategory !== 'taxi'/);
   assert.match(map,/categoryNotice\.hidden = false/);
   assert.match(map,/Опубликованных служб такси пока нет/);
