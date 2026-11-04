@@ -38,6 +38,11 @@ begin
  exception when insufficient_privilege then null;
  end;
  begin
+  perform public.daapp_admin_member_register('', 'all', 10, 0);
+  raise exception 'Regular member read admin member registry';
+ exception when insufficient_privilege then null;
+ end;
+ begin
   perform public.daapp_architect_update_settings(false,false);
   raise exception 'Regular user changed architect settings';
  exception when insufficient_privilege then null;
@@ -117,7 +122,15 @@ insert into public.daapp_architects(user_id)
 set role authenticated;
 set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 select public.daapp_architect_update_settings(false,false);
-do $$
+set request.jwt.claim.sub='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+do $
+begin
+ if (select count(*) from public.daapp_public_member_directory(20))<>0 then
+  raise exception 'Architect-disabled contacts directory still reveals phones';
+ end if;
+end $;
+set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+do $
 declare v jsonb;
 begin
  v:=public.daapp_admin_dashboard();
