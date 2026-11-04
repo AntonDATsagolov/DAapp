@@ -59,8 +59,8 @@
         <p class="muted">Вход нужен для заказов и личных данных. Картой можно пользоваться без регистрации.</p>
         <section class="panel" id="login">
           <h3>Единый аккаунт DAapp</h3>
-          <p class="muted">Один аккаунт жителя или гостя для всех функций. Регистрация с логином, паролем и SMS-проверкой телефона.</p>
-          <p class="profile-links"><a href="../account-app/?next=resident">Войти или зарегистрироваться по номеру и паролю</a></p>
+          <p class="muted">Один аккаунт жителя или гостя для всех функций. Один аккаунт с логином, паролем и подтверждением e-mail. Телефон нужен для связи, без SMS-проверки.</p>
+          <p class="profile-links"><a href="../account-app/?next=resident">Единый вход DAapp</a></p>
           <p class="muted">Уже входили раньше по e-mail? Используйте прежнюю ссылку:</p>
           <form id="loginForm">
             <label for="email">Электронная почта</label>
@@ -232,5 +232,6 @@
     message.textContent = 'Не удалось подключить профиль. Карта работает отдельно; проверьте интернет или страницу диагностики.';
   }
 </script>
+<script type="module" src="../shared/mode-switcher.js"></script>
 </body>
 </html>
