@@ -41,12 +41,12 @@ begin
   end if;
   begin
     perform public.daapp_taxi_create_order('Shieli Abay 16','Shieli station');
-    raise exception 'Passenger created duplicate active trip';
+    raise exception 'Passenger created duplicate active trip' using errcode='XX000';
   exception when raise_exception or unique_violation then null;
   end;
   begin
     perform public.daapp_taxi_accept_order(
-      (select id from public.daapp_taxi_orders where pickup='Shieli Abay 15'));
+      '00000000-0000-4000-8000-000000000099'::uuid);
     raise exception 'Passenger assigned their own driver';
   exception when insufficient_privilege then null;
   end;
@@ -130,8 +130,8 @@ do $$
 begin
   begin
     perform public.daapp_taxi_accept_order(
-      (select id from public.daapp_taxi_orders where pickup='Shieli market main gate'));
-    raise exception 'Busy driver accepted multiple simultaneous rides';
+      '00000000-0000-4000-8000-000000000098'::uuid);
+    raise exception 'Busy driver accepted multiple simultaneous rides' using errcode='XX000';
   exception when raise_exception or unique_violation then null;
   end;
 end $$;
